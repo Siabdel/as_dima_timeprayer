@@ -22,6 +22,7 @@ import { getAdhanSounds } from '../api/adhanSounds';
 import SettingsPreferencesPanel from '../components/SettingsPreferencesPanel.vue';
 import LocationSettingsCard from '../components/LocationSettingsCard.vue';
 import CalcSettingsCard from '../components/CalcSettingsCard.vue';
+import ShareAppCard from '../components/ShareAppCard.vue';
 import {
   isPushSupported,
   requestPermissionAndSubscribe,
@@ -389,6 +390,9 @@ function handleLogout() {
 
       <!-- Ma position (lieu des horaires et de la météo) -->
       <LocationSettingsCard />
+
+      <!-- Partager l'app : QR code, lien, menu de partage -->
+      <ShareAppCard />
 
       <!-- Calcul des horaires (méthode + école juridique) -->
       <CalcSettingsCard />
