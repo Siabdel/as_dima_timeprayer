@@ -6,8 +6,11 @@
 import axios from 'axios';
 
 // URL de base de l'API (peut être surchargée au build ou au runtime Vite).
+// En production (image nginx), l'API est proxifiée sur la même origine : « /api/v1 »
+// fonctionne sur n'importe quel domaine (téléphones d'amis, tunnel, VPS).
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? '/api/v1' : 'http://localhost:8000/api/v1');
 
 const TOKENS_KEY = 'pc_tokens';
 
