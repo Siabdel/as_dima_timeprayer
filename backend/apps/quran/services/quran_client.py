@@ -139,7 +139,7 @@ def normalize_reciters(payload: dict) -> dict:
     for rec in payload.get("recitations", []):
         entry = {
             "id": rec.get("id"),
-            "name": rec.get("name", ""),
+            "name": rec.get("reciter_name") or rec.get("name", ""),
             "style": rec.get("style", ""),
         }
         if rec.get("relative_path") and "per_ayaah" in str(rec.get("relative_path")):
