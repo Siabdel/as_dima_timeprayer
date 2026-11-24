@@ -269,8 +269,34 @@ def fetch_chapter_words(surah: int) -> list[dict]:
     return result
 
 
+# Récitateurs marocains (riwayat Warsh 'an Nafi') — fichiers par sourate
+# hébergés par mp3quran.net (diffusion libre, CORS ouvert). Hors Quran.com :
+# identifiants >= 100000 pour éviter toute collision, et pas d'horodatages
+# (le suivi verset/mot n'est donc pas disponible pour eux).
+EXTRA_RECITERS = [
+    {"id": 100080, "name": "Omar Al-Qazabri", "style": "Warsh · Murattal",
+     "server": "https://cdn.mp3quran.net/audio/omar-kazabri/r1/"},
+    {"id": 100016, "name": "Laayoune Al-Kouchi", "style": "Warsh · Murattal",
+     "server": "https://cdn.mp3quran.net/audio/laayoun-kouchi/r1/"},
+    {"id": 100199, "name": "Abdelmoujib Benkirane", "style": "Warsh · Murattal",
+     "server": "https://cdn.mp3quran.net/audio/abdelmoujib-benkirane/r1/"},
+    {"id": 100305, "name": "Hicham Lharraz", "style": "Warsh · Murattal",
+     "server": "https://cdn.mp3quran.net/audio/hicham-lharraz/r1/"},
+    {"id": 100027, "name": "Rachid Belalya", "style": "Warsh · Murattal",
+     "server": "https://cdn.mp3quran.net/audio/rachid-belalia/r1/"},
+]
+
+
+def extra_reciters_public() -> list[dict]:
+    """Récitateurs supplémentaires, sans l'URL serveur (format de /reciters/)."""
+    return [{k: r[k] for k in ("id", "name", "style")} for r in EXTRA_RECITERS]
+
+
 def fetch_chapter_audio(surah: int, reciter_id: int) -> dict:
     """URL audio de la sourate complète pour un réciteur donné."""
+    extra = next((r for r in EXTRA_RECITERS if r["id"] == reciter_id), None)
+    if extra:
+        return {"audio_url": f"{extra['server']}{surah:03d}.mp3", "timestamps": []}
     # segments=true : horodatages par verset (et par mot) pour le suivi visuel.
     payload = _get(f"/chapter_recitations/{reciter_id}/{surah}", {"segments": "true"})
     # L'API v4 imbrique l'URL : {"audio_file": {"audio_url": "https://..."}}

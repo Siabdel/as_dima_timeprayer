@@ -164,7 +164,11 @@ class RecitersView(APIView):
             return _error_response(
                 "external_api_error", str(exc), status.HTTP_503_SERVICE_UNAVAILABLE
             )
-        return Response(reciters)
+        # Récitateurs marocains ajoutés hors cache (liste statique).
+        return Response({
+            **reciters,
+            "chapter": [*reciters.get("chapter", []), *quran_client.extra_reciters_public()],
+        })
 
 
 class ChapterAudioView(APIView):

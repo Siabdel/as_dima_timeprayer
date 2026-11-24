@@ -226,3 +226,23 @@ class TestReadingProgress:
             self.PROGRESS_URL, {"last_surah_number": 999}, format="json"
         )
         assert resp.status_code == 400
+
+
+class TestExtraReciters:
+    @responses.activate
+    def test_moroccan_reciters_listed(self, api_client):
+        responses.add(
+            responses.GET,
+            f"{quran_client.settings.QURAN_API_BASE_URL}/resources/recitations",
+            json=RECITATIONS_PAYLOAD, status=200,
+        )
+        resp = api_client.get("/api/v1/quran/reciters/")
+        assert resp.status_code == 200
+        names = [r["name"] for r in resp.data["chapter"]]
+        assert "Omar Al-Qazabri" in names
+        assert all("server" not in r for r in resp.data["chapter"])
+
+    def test_extra_reciter_chapter_audio_without_quran_com(self, api_client):
+        resp = api_client.get("/api/v1/quran/audio/chapter/2/", {"reciter_id": 100080})
+        assert resp.status_code == 200
+        assert resp.data["audio_url"] == "https://cdn.mp3quran.net/audio/omar-kazabri/r1/002.mp3"
