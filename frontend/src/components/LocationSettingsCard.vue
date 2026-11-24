@@ -5,10 +5,12 @@
 // uniquement) ou recherche manuelle ville + pays. Écrit dans le store
 // prayerTimes (qui recharge les horaires et mémorise le lieu).
 // ===========================================================================
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { usePrayerTimesStore } from '../stores/prayerTimes';
 
 const prayerStore = usePrayerTimesStore();
+// Lieu mémorisé sur l'appareil (accès direct à /settings).
+onMounted(() => prayerStore.restorePersisted());
 
 const city = ref('');
 const country = ref('');

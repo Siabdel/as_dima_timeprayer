@@ -21,6 +21,7 @@ import { getSubscriptionStatus } from '../api/tools';
 import { getAdhanSounds } from '../api/adhanSounds';
 import SettingsPreferencesPanel from '../components/SettingsPreferencesPanel.vue';
 import LocationSettingsCard from '../components/LocationSettingsCard.vue';
+import CalcSettingsCard from '../components/CalcSettingsCard.vue';
 import {
   isPushSupported,
   requestPermissionAndSubscribe,
@@ -388,6 +389,9 @@ function handleLogout() {
 
       <!-- Ma position (lieu des horaires et de la météo) -->
       <LocationSettingsCard />
+
+      <!-- Calcul des horaires (méthode + école juridique) -->
+      <CalcSettingsCard />
 
       <!-- Invité : les réglages liés au compte demandent une connexion -->
       <div v-if="!auth.isAuthenticated" class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="note">

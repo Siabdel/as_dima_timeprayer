@@ -1,8 +1,7 @@
 <script setup>
 // ===========================================================================
 // SettingsPreferencesPanel : réglages avancés (compte connecté).
-//   A. Ma position  : fuseau horaire (auto / manuel), méthode de calcul par
-//      organisme de référence, langue ;
+//   A. Fuseau horaire (auto / manuel) et langue ;
 //   B. Alertes & Adhan : mode d'alerte par prière, Adhan du Fajr, volume,
 //      montée progressive, rappel avant l'Adhan ;
 //   C. Audio & récitation : récitateur par défaut (aperçu, style), gestion
@@ -16,8 +15,6 @@ import { getAdhanSounds } from '../api/adhanSounds';
 import { getChapterAudio } from '../api/quran';
 import { playAdhanSound, stopAdhanSound, playBeep } from '../services/adhanAudio';
 import {
-  CALC_METHODS,
-  COUNTRY_METHODS,
   COMMON_TIMEZONES,
   deviceTimezone,
   utcOffsetLabel,
@@ -58,14 +55,12 @@ const form = reactive({
   timezone_mode: 'auto',
   timezone: '',
   language: 'fr',
-  calculation_method: 3,
   alert_modes: {},
   reminder_minutes_before: 0,
   fajr_adhan_sound_id: null,
   adhan_volume: 100,
   adhan_fade_in: false,
 });
-const country = ref('');
 const loaded = ref(false);
 const saving = ref(false);
 const saved = ref(false);
@@ -77,7 +72,6 @@ function mirror(p) {
   form.timezone_mode = p.timezone_mode ?? 'auto';
   form.timezone = p.timezone ?? '';
   form.language = p.language ?? 'fr';
-  form.calculation_method = p.calculation_method ?? 3;
   form.alert_modes = { ...(p.alert_modes ?? {}) };
   form.reminder_minutes_before = p.reminder_minutes_before ?? 0;
   form.fajr_adhan_sound_id = p.fajr_adhan_sound_id ?? null;
@@ -119,13 +113,6 @@ const zonesRest = computed(() =>
 const manualOffset = computed(() =>
   form.timezone ? utcOffsetLabel(form.timezone) : ''
 );
-const suggestedMethod = computed(
-  () => COUNTRY_METHODS.find((c) => c.code === country.value)?.method ?? null
-);
-function applySuggestedMethod() {
-  if (suggestedMethod.value !== null) save({ calculation_method: suggestedMethod.value });
-}
-
 // --- B. Alertes & Adhan ----------------------------------------------------------
 const adhanSounds = ref([]);
 function alertModeOf(prayer) {
@@ -258,7 +245,7 @@ onMounted(async () => {
     <!-- ===================== A. Ma position ===================== -->
     <div v-if="!localOnly" class="card shadow-sm mb-4">
       <div class="card-body p-4">
-        <h2 class="h6 text-uppercase text-muted mb-3">Fuseau horaire, calcul et langue</h2>
+        <h2 class="h6 text-uppercase text-muted mb-3">Fuseau horaire et langue</h2>
 
         <fieldset class="mb-3" :disabled="!loaded || saving">
           <legend class="form-label small fw-semibold">Fuseau horaire</legend>
@@ -298,30 +285,6 @@ onMounted(async () => {
             Décalage actuel : {{ manualOffset }}. L'heure d'été/hiver et le
             changement d'heure du Maroc pendant le Ramadan sont appliqués
             automatiquement.
-          </p>
-        </fieldset>
-
-        <fieldset class="mb-3" :disabled="!loaded || saving">
-          <legend class="form-label small fw-semibold">Méthode de calcul des prières</legend>
-          <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-5">
-              <label for="calc-country" class="form-label small mb-1">Mon pays</label>
-              <select id="calc-country" v-model="country" class="form-select form-select-sm"
-                      @change="applySuggestedMethod">
-                <option value="">— Choisir —</option>
-                <option v-for="c in COUNTRY_METHODS" :key="c.code" :value="c.code">{{ c.label }}</option>
-              </select>
-            </div>
-            <div class="col-12 col-md-7">
-              <label for="calc-method" class="form-label small mb-1">Organisme de référence</label>
-              <select id="calc-method" v-model.number="form.calculation_method"
-                      class="form-select form-select-sm" @change="save()">
-                <option v-for="m in CALC_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </select>
-            </div>
-          </div>
-          <p class="form-text mb-0">
-            Choisir un pays applique l'organisme recommandé ; vous pouvez ensuite le modifier.
           </p>
         </fieldset>
 

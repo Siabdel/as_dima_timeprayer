@@ -16,7 +16,6 @@ import { usePrayerTimesStore } from '../stores/prayerTimes';
 import { useAuthStore } from '../stores/auth';
 import { usePreferencesStore } from '../stores/preferences';
 import { formatHijri } from '../utils/time';
-import { CALC_METHODS } from '../utils/calcMethods';
 import PrayerTimesCard from '../components/PrayerTimesCard.vue';
 import CountdownTimer from '../components/CountdownTimer.vue';
 import WeatherCard from '../components/WeatherCard.vue';
@@ -42,7 +41,7 @@ const geoError = ref(null);
 const showCityForm = ref(false);
 
 // Méthodes de calcul proposées (contrat API : entier 0-30, défaut 3).
-const METHODS = CALC_METHODS;
+
 
 // ---------------------------------------------------------------------------
 // Propriétés calculées
@@ -135,28 +134,6 @@ async function refetch() {
   } catch {
     // L'erreur API est déjà exposée par le store.
   }
-}
-
-/**
- * Changement de méthode ou de madhhab : recharge immédiatement les horaires,
- * puis synchronise les préférences du compte connecté (PUT non bloquant).
- */
-function onMethodChange() {
-  if (hasLocation.value) refetch();
-  syncPreferences();
-}
-
-/** PUT /auth/preferences/ — silencieux, ne bloque jamais l'affichage. */
-function syncPreferences() {
-  if (!authStore.isAuthenticated) return;
-  preferencesStore
-    .update({
-      calculation_method: prayerStore.method,
-      madhhab: prayerStore.madhhab,
-    })
-    .catch(() => {
-      // Échec silencieux : l'affichage ne dépend pas de cette sauvegarde.
-    });
 }
 
 // ---------------------------------------------------------------------------
@@ -277,47 +254,6 @@ onMounted(async () => {
           <router-link class="btn btn-outline-pc btn-sm" :to="{ name: 'settings' }">
             <i class="bi bi-gear me-1" aria-hidden="true"></i>Modifier ma position
           </router-link>
-        </div>
-
-        <!-- Sélecteurs méthode + madhhab -->
-        <div class="card shadow-sm mb-4">
-          <div class="card-body p-3 p-md-4">
-            <h2 class="h5 mb-3">
-              <i class="bi bi-sliders me-1" aria-hidden="true"></i>
-              Calcul des horaires
-            </h2>
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label for="pc-method" class="form-label">Méthode de calcul</label>
-                <select
-                  id="pc-method"
-                  v-model.number="prayerStore.method"
-                  class="form-select"
-                  @change="onMethodChange"
-                >
-                  <option v-for="m in METHODS" :key="m.value" :value="m.value">
-                    {{ m.label }}
-                  </option>
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <label for="pc-madhhab" class="form-label">École juridique (Asr)</label>
-                <select
-                  id="pc-madhhab"
-                  v-model="prayerStore.madhhab"
-                  class="form-select"
-                  @change="onMethodChange"
-                >
-                  <option value="standard">Standard (Shafi'i, Maliki, Hanbali)</option>
-                  <option value="hanafi">Hanafi</option>
-                </select>
-              </div>
-            </div>
-            <p class="form-text text-muted mb-0 mt-2">
-              Les préférences sont mémorisées sur cet appareil
-              <template v-if="authStore.isAuthenticated"> et dans votre compte.</template>
-            </p>
-          </div>
         </div>
 
         <!-- Date hégirienne -->

@@ -42,7 +42,7 @@ test.describe('Horaires de prière', () => {
     await expect(page.getByRole('heading', { name: 'Horaires du jour' })).toBeVisible();
   });
 
-  test('les sélecteurs méthode et madhhab sont présents et fonctionnels', async ({ page }) => {
+  test('méthode et madhhab se règlent dans les Réglages et rechargent les horaires', async ({ page }) => {
     await page.addInitScript(() => window.localStorage.clear());
     await page.goto('/');
     await page.getByRole('button', { name: /ville/i }).first().click();
@@ -51,11 +51,17 @@ test.describe('Horaires de prière', () => {
     await page.locator('form:has(#pc-city)').getByRole('button', { type: 'submit' }).click();
     await expect(page.getByRole('heading', { name: 'Horaires du jour' })).toBeVisible();
 
+    // Plus de carte « Calcul des horaires » sur l'accueil.
+    await expect(page.locator('#pc-method')).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Réglages' }).first().click();
     await expect(page.locator('#pc-method')).toBeVisible();
     await expect(page.locator('#pc-madhhab')).toBeVisible();
-
-    // Changer la méthode déclenche un refetch (le compteur reste lisible).
     await page.selectOption('#pc-method', '2');
+    await expect(page.locator('#pc-method')).toHaveValue('2');
+
+    // Mémorisé : retour à l'accueil, puis Réglages.
+    await page.goto('/settings');
     await expect(page.locator('#pc-method')).toHaveValue('2');
   });
 });

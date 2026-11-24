@@ -26,7 +26,8 @@ outils (Qibla, tasbih) et bibliothèque.
     l'application — voir ci-dessous).
 - **Réglages** (compte connecté) :
   - *Ma position* : lieu des horaires et de la météo (géolocalisation ou ville). Réglages ouverts à tous : sans compte, seules les sections locales (position, récitateur, cache audio) sont disponibles.
-  - *Fuseau, calcul et langue* : fuseau horaire auto/manuel (IANA), méthode de calcul par pays, langue.
+  - *Calcul des horaires* : méthode par pays/organisme et école juridique (Asr), mémorisés sur l'appareil et dans le compte.
+  - *Fuseau horaire et langue* : fuseau auto/manuel (IANA), langue.
   - *Alertes & Adhan* : mode par prière (sonnerie, bip, vibreur, silencieux), Adhan du Fajr,
     volume, fade-in, rappel avant l'Adhan.
   - *Audio* : récitateur par défaut avec aperçu, cache audio hors ligne vidable.
