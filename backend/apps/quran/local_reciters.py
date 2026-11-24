@@ -10,7 +10,13 @@ Ajouter un récitateur local :
   2. Ajouter une entrée dans LOCAL_RECITERS ci-dessous.
 """
 
+import os
 from dataclasses import dataclass
+
+# Désactivable par environnement (LOCAL_RECITERS_ENABLED=false) quand les MP3
+# ne sont pas déployés (ex. VPS sans les 816 Mo de Benmoussa).
+def _enabled() -> bool:
+    return os.environ.get("LOCAL_RECITERS_ENABLED", "true").lower() != "false"
 
 
 @dataclass(frozen=True)
@@ -47,7 +53,7 @@ _BY_ID = {r.id: r for r in LOCAL_RECITERS}
 
 def get_local_reciter(reciter_id: str | None) -> LocalReciter | None:
     """Retourne le récitateur local correspondant, ou None."""
-    if not reciter_id:
+    if not reciter_id or not _enabled():
         return None
     return _BY_ID.get(str(reciter_id))
 
@@ -62,6 +68,8 @@ def chapter_path(reciter: LocalReciter, surah: int) -> str:
 
 def as_list() -> list[dict]:
     """Liste sérialisée pour l'API (ajoutée à GET /quran/reciters/)."""
+    if not _enabled():
+        return []
     return [
         {
             "id": r.id,

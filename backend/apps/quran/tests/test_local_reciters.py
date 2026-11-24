@@ -90,3 +90,12 @@ class TestChapterAudioHssain:
         resp = api_client.get("/api/v1/quran/audio/chapter/114/", {"reciter_id": "hssain"})
         assert resp.status_code == 200
         assert resp.data["audio_url"] == "/quran/hssain/114.mp3"
+
+
+class TestLocalRecitersDisabled:
+    def test_disabled_by_env(self, api_client, monkeypatch):
+        monkeypatch.setenv("LOCAL_RECITERS_ENABLED", "false")
+        assert local_reciters.get_local_reciter("benmoussa") is None
+        assert local_reciters.as_list() == []
+        resp = api_client.get("/api/v1/quran/audio/chapter/1/", {"reciter_id": "benmoussa"})
+        assert resp.status_code == 400
