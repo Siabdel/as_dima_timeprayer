@@ -26,7 +26,8 @@ const routes = [
     path: '/settings',
     name: 'settings',
     component: SettingsView,
-    meta: { requiresAuth: true },
+    // Ouverte à tous : les sections locales (lieu, récitateur, cache audio)
+    // fonctionnent sans compte ; le reste est réservé aux comptes.
   },
   {
     path: '/login',

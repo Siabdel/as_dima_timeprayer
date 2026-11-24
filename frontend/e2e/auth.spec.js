@@ -81,10 +81,13 @@ test.describe('Authentification', () => {
     await expect(page.getByText(email)).toBeHidden();
   });
 
-  test('protéger la page /settings (redirection vers /login)', async ({ page }) => {
+  test('/settings est ouverte aux invités : sections locales + invitation à se connecter', async ({ page }) => {
     await page.goto('/settings');
-    await expect(page).toHaveURL(/\/login/);
-    // La cible d'origine est mémorisée dans la query.
-    await expect(page).toHaveURL(/redirect=\/settings/);
+    await expect(page).toHaveURL(/\/settings/);
+    await expect(page.getByText('Connectez-vous pour enregistrer vos préférences')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ma position' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Audio et récitation du Coran' })).toBeVisible();
+    // Sections de compte masquées.
+    await expect(page.getByRole('heading', { name: 'Préférences de notification' })).toBeHidden();
   });
 });

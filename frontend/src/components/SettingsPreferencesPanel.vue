@@ -24,6 +24,11 @@ import {
   allTimezones,
 } from '../utils/calcMethods';
 
+const props = defineProps({
+  /** Invité : seules les sections locales (récitateur, cache audio) sont rendues. */
+  localOnly: { type: Boolean, default: false },
+});
+
 const preferences = usePreferencesStore();
 const player = useQuranPlayerStore();
 
@@ -227,15 +232,17 @@ function formatBytes(n) {
 }
 
 onMounted(async () => {
-  try {
-    mirror(preferences.preference ?? (await preferences.fetch()));
-    loaded.value = Boolean(preferences.preference);
-  } catch {
-    loaded.value = false;
+  if (!props.localOnly) {
+    try {
+      mirror(preferences.preference ?? (await preferences.fetch()));
+      loaded.value = Boolean(preferences.preference);
+    } catch {
+      loaded.value = false;
+    }
+    getAdhanSounds()
+      .then((r) => (adhanSounds.value = r.data?.sounds ?? []))
+      .catch(() => {});
   }
-  getAdhanSounds()
-    .then((r) => (adhanSounds.value = r.data?.sounds ?? []))
-    .catch(() => {});
   player.fetchReciters().then((list) => (reciters.value = list));
   refreshCache();
 });
@@ -243,13 +250,13 @@ onMounted(async () => {
 
 <template>
   <div>
-    <p v-if="error" class="alert alert-danger py-2 small" role="alert">{{ error }}</p>
-    <p class="small text-success mb-2" role="status" aria-live="polite">
+    <p v-if="error && !localOnly" class="alert alert-danger py-2 small" role="alert">{{ error }}</p>
+    <p v-if="!localOnly" class="small text-success mb-2" role="status" aria-live="polite">
       <span v-if="saved"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Enregistré</span>
     </p>
 
     <!-- ===================== A. Ma position ===================== -->
-    <div class="card shadow-sm mb-4">
+    <div v-if="!localOnly" class="card shadow-sm mb-4">
       <div class="card-body p-4">
         <h2 class="h6 text-uppercase text-muted mb-3">Fuseau horaire, calcul et langue</h2>
 
@@ -334,7 +341,7 @@ onMounted(async () => {
     </div>
 
     <!-- ===================== B. Alertes & Adhan ===================== -->
-    <div class="card shadow-sm mb-4">
+    <div v-if="!localOnly" class="card shadow-sm mb-4">
       <div class="card-body p-4">
         <h2 class="h6 text-uppercase text-muted mb-3">Alertes et Adhan avancé</h2>
 

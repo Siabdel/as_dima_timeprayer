@@ -389,6 +389,19 @@ function handleLogout() {
       <!-- Ma position (lieu des horaires et de la météo) -->
       <LocationSettingsCard />
 
+      <!-- Invité : les réglages liés au compte demandent une connexion -->
+      <div v-if="!auth.isAuthenticated" class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="note">
+        <span>
+          <i class="bi bi-person me-1" aria-hidden="true"></i>
+          Connectez-vous pour enregistrer vos préférences, recevoir les rappels
+          d'Adhan et régler le calcul des horaires, le fuseau et la langue.
+        </span>
+        <router-link class="btn btn-sm btn-pc-green" :to="{ name: 'login', query: { redirect: '/settings' } }">
+          Connexion
+        </router-link>
+      </div>
+
+      <template v-if="auth.isAuthenticated">
       <!-- Carte profil -->
       <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
@@ -562,7 +575,12 @@ function handleLogout() {
       </div>
 
       <!-- Ma position, alertes avancées, audio & récitation -->
-      <SettingsPreferencesPanel v-if="auth.isAuthenticated" />
+      </template>
+
+      <!-- Fuseau/calcul/alertes (compte) + récitateur et cache audio (local) -->
+      <SettingsPreferencesPanel :local-only="!auth.isAuthenticated" />
+
+      <template v-if="auth.isAuthenticated">
 
       <!-- ===================== Notifications push ====================== -->
       <div class="card shadow-sm mb-4">
@@ -726,6 +744,7 @@ function handleLogout() {
           </button>
         </div>
       </div>
+      </template>
     </div>
   </div>
 </template>

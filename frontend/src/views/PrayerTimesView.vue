@@ -269,82 +269,14 @@ onMounted(async () => {
 
       <!-- ===================== Page principale ===================== -->
       <div v-else>
-        <!-- Connecté : « Ma position » se gère dans les Réglages -->
-        <div v-if="authStore.isAuthenticated" class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <!-- « Ma position » se gère dans les Réglages (ouverts à tous) -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
           <span class="fw-semibold">
             <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ displayLocation }}
           </span>
           <router-link class="btn btn-outline-pc btn-sm" :to="{ name: 'settings' }">
             <i class="bi bi-gear me-1" aria-hidden="true"></i>Modifier ma position
           </router-link>
-        </div>
-
-        <!-- Visiteur : carte « Ma position » (pas d'accès aux Réglages sans compte) -->
-        <div v-else class="card shadow-sm mb-4">
-          <div class="card-body p-3 p-md-4">
-            <h2 class="h5 mb-3">
-              <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>
-              Ma position
-            </h2>
-            <p class="mb-3" v-if="displayLocation">
-              <span class="fw-semibold">{{ displayLocation }}</span>
-            </p>
-
-            <div class="d-flex flex-column flex-sm-row gap-2 mb-3">
-              <button
-                type="button"
-                class="btn btn-pc-green"
-                :disabled="geoLoading"
-                @click="detectLocation"
-              >
-                <span
-                  v-if="geoLoading"
-                  class="spinner-border spinner-border-sm me-1"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                <i v-else class="bi bi-geo-alt me-1" aria-hidden="true"></i>
-                Utiliser ma position
-              </button>
-            </div>
-
-            <!-- Recherche manuelle ville + pays -->
-            <form class="row g-2" @submit.prevent="searchCity">
-              <div class="col-12 col-md-5">
-                <label for="pc-city" class="form-label">Ville</label>
-                <input
-                  id="pc-city"
-                  ref="cityInput"
-                  v-model="manualCity"
-                  type="text"
-                  class="form-control"
-                  placeholder="Paris"
-                  autocomplete="address-level2"
-                />
-              </div>
-              <div class="col-12 col-md-4">
-                <label for="pc-country" class="form-label">Pays</label>
-                <input
-                  id="pc-country"
-                  v-model="manualCountry"
-                  type="text"
-                  class="form-control"
-                  placeholder="France"
-                  autocomplete="country-name"
-                />
-              </div>
-              <div class="col-12 col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-outline-pc w-100">
-                  <i class="bi bi-search me-1" aria-hidden="true"></i>
-                  Rechercher
-                </button>
-              </div>
-            </form>
-
-            <p v-if="geoError" class="text-danger small mt-2 mb-0" role="alert">
-              {{ geoError }}
-            </p>
-          </div>
         </div>
 
         <!-- Sélecteurs méthode + madhhab -->

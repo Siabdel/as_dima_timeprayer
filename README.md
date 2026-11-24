@@ -25,7 +25,7 @@ outils (Qibla, tasbih) et bibliothèque.
     **Cheikh Abdelhamid Hssain** (114 sourates chacun, MP3 servis par
     l'application — voir ci-dessous).
 - **Réglages** (compte connecté) :
-  - *Ma position* : lieu des horaires et de la météo (géolocalisation ou ville). Les visiteurs sans compte la gardent sur l'accueil.
+  - *Ma position* : lieu des horaires et de la météo (géolocalisation ou ville). Réglages ouverts à tous : sans compte, seules les sections locales (position, récitateur, cache audio) sont disponibles.
   - *Fuseau, calcul et langue* : fuseau horaire auto/manuel (IANA), méthode de calcul par pays, langue.
   - *Alertes & Adhan* : mode par prière (sonnerie, bip, vibreur, silencieux), Adhan du Fajr,
     volume, fade-in, rappel avant l'Adhan.
