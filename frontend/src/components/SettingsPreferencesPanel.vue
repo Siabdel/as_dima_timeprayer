@@ -251,7 +251,7 @@ onMounted(async () => {
     <!-- ===================== A. Ma position ===================== -->
     <div class="card shadow-sm mb-4">
       <div class="card-body p-4">
-        <h2 class="h6 text-uppercase text-muted mb-3">Ma position</h2>
+        <h2 class="h6 text-uppercase text-muted mb-3">Fuseau horaire, calcul et langue</h2>
 
         <fieldset class="mb-3" :disabled="!loaded || saving">
           <legend class="form-label small fw-semibold">Fuseau horaire</legend>

@@ -20,6 +20,7 @@ import { usePreferencesStore } from '../stores/preferences';
 import { getSubscriptionStatus } from '../api/tools';
 import { getAdhanSounds } from '../api/adhanSounds';
 import SettingsPreferencesPanel from '../components/SettingsPreferencesPanel.vue';
+import LocationSettingsCard from '../components/LocationSettingsCard.vue';
 import {
   isPushSupported,
   requestPermissionAndSubscribe,
@@ -384,6 +385,9 @@ function handleLogout() {
   <div class="row justify-content-center">
     <div class="col-12 col-md-10 col-lg-8">
       <h1 class="h4 mb-4">Réglages</h1>
+
+      <!-- Ma position (lieu des horaires et de la météo) -->
+      <LocationSettingsCard />
 
       <!-- Carte profil -->
       <div class="card shadow-sm mb-4">

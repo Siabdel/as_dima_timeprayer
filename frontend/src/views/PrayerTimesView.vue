@@ -269,8 +269,18 @@ onMounted(async () => {
 
       <!-- ===================== Page principale ===================== -->
       <div v-else>
-        <!-- Carte « Ma position » + sélecteurs -->
-        <div class="card shadow-sm mb-4">
+        <!-- Connecté : « Ma position » se gère dans les Réglages -->
+        <div v-if="authStore.isAuthenticated" class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+          <span class="fw-semibold">
+            <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ displayLocation }}
+          </span>
+          <router-link class="btn btn-outline-pc btn-sm" :to="{ name: 'settings' }">
+            <i class="bi bi-gear me-1" aria-hidden="true"></i>Modifier ma position
+          </router-link>
+        </div>
+
+        <!-- Visiteur : carte « Ma position » (pas d'accès aux Réglages sans compte) -->
+        <div v-else class="card shadow-sm mb-4">
           <div class="card-body p-3 p-md-4">
             <h2 class="h5 mb-3">
               <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>
