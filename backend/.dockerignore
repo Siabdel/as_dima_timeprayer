@@ -1,0 +1,17 @@
+# Fichiers exclus du contexte de build Docker
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+db.sqlite3
+staticfiles/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+celerybeat-schedule*
+*.pid
+.idea/
+.vscode/

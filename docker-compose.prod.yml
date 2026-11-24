@@ -1,0 +1,120 @@
+# =============================================================================
+# Prière & Coran — Configuration de production (conteneurisée)
+# Usage : docker compose -f docker-compose.prod.yml up -d
+# Pré-requis : image buildée en mode prod, secrets réels dans .env, TLS en amont.
+# =============================================================================
+
+name: dimatimeprayer-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB requis}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER requis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Pas de port exposé : accessible uniquement via le réseau interne Docker.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      target: prod
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --worker-class gthread --threads 4"
+    volumes:
+      - static_data:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+      target: prod
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    # Worker dédié aux notifications : isole les pics Ramadan des tâches courantes.
+    command: celery -A config worker -Q notifications -c 4 -l info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-default:
+    build:
+      context: ./backend
+      target: prod
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    command: celery -A config worker -Q default -c 4 -l info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: ./backend
+      target: prod
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    command: celery -A config beat -l info --schedule=/tmp/celerybeat-schedule --pidfile=/tmp/celerybeat.pid
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+    restart: unless-stopped
+    volumes:
+      - static_data:/usr/share/nginx/static:ro
+    # Pas de port hôte : le reverse proxy TLS (Caddy, voir docker-compose.caddy.yml)
+    # entre dans le réseau Docker et proxyfie vers frontend:80.
+    # Pour tester sans Caddy : "127.0.0.1:8080:80".
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_data:

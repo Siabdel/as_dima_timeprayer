@@ -1,0 +1,20 @@
+# Caddy — reverse proxy TLS pour « Prière & Coran » (production)
+# Remplacez VOTRE_DOMAINE par votre domaine réel (ex : priere.example.com).
+# Caddy obtient et renouvelle automatiquement les certificats Let's Encrypt.
+
+VOTRE_DOMAINE {
+	encode gzip
+
+	# Tout le trafic est servi par le conteneur frontend (nginx) :
+	# SPA, service worker, manifest PWA, /api/, /admin/, /static/.
+	reverse_proxy frontend:80
+
+	header {
+		# Sécurité — HSTS est aussi posé par Django côté API.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

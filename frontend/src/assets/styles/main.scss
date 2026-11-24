@@ -1,0 +1,152 @@
+// ===========================================================================
+// Thème global « Prière & Coran »
+// ---------------------------------------------------------------------------
+// Bootstrap 5 (CSS + JS) est importé dans src/main.js. Ce fichier surcharge
+// le thème via des variables CSS : vert islamique #14746F, accent or #E9C46A,
+// fond clair #f8f9fa. Contrastes vérifiés WCAG AA :
+//   - blanc (#fff) sur vert #14746F ≈ 5,3:1  → AA texte normal, AAA texte large ;
+//   - vert #14746F sur fond clair #f8f9fa ≈ 5,0:1 → AA texte normal ;
+//   - l'or #E9C46A est réservé aux accents décoratifs et aux texte large
+//     sur fond vert (≈ 3,5:1) ; jamais utilisé pour du texte petit sur clair.
+// ===========================================================================
+
+:root {
+  // Couleurs de marque
+  --pc-green: #14746F;
+  --pc-green-dark: #0e5753; // survol / états actifs
+  --pc-gold: #E9C46A;
+  --pc-gold-dark: #8a6d1f; // or assombri : utilisable en texte sur fond clair (AA)
+  --pc-bg: #f8f9fa;
+
+  // Alignement de la palette Bootstrap sur la marque (boutons, liens actifs)
+  --bs-primary: #14746F;
+  --bs-primary-rgb: 20, 116, 111;
+  --bs-body-bg: #f8f9fa;
+  --bs-body-font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+// ---------------------------------------------------------------------------
+// Base
+// ---------------------------------------------------------------------------
+body {
+  background-color: var(--pc-bg);
+  color: #212529;
+}
+
+// Liens de marque : vert AA, survol assombri
+a {
+  color: var(--pc-green);
+  text-decoration-color: rgba(20, 116, 111, 0.4);
+
+  &:hover {
+    color: var(--pc-green-dark);
+  }
+}
+
+// Focus clavier visible partout (navigation clavier sans souris)
+:focus-visible {
+  outline: 3px solid var(--pc-gold-dark);
+  outline-offset: 2px;
+}
+
+// ---------------------------------------------------------------------------
+// Navbar (vert islamique, texte blanc AA, accent or au survol)
+// ---------------------------------------------------------------------------
+.navbar.bg-pc-green {
+  background-color: var(--pc-green);
+
+  .nav-link {
+    color: rgba(255, 255, 255, 0.92);
+
+    &:hover,
+    &:focus {
+      color: var(--pc-gold);
+    }
+
+    // Lien de la page courante : soulignement doré
+    &.router-link-active {
+      color: var(--pc-gold);
+      font-weight: 600;
+    }
+  }
+
+  .navbar-brand {
+    color: #ffffff;
+
+    &:hover,
+    &:focus {
+      color: var(--pc-gold);
+    }
+  }
+}
+
+// Adresse e-mail affichée dans la navbar (utilisateur connecté)
+.pc-nav-email {
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+// ---------------------------------------------------------------------------
+// Bouton principal de la marque
+// ---------------------------------------------------------------------------
+.btn-pc-green {
+  background-color: var(--pc-green);
+  border-color: var(--pc-green);
+  color: #ffffff;
+
+  &:hover,
+  &:focus {
+    background-color: var(--pc-green-dark);
+    border-color: var(--pc-green-dark);
+    color: #ffffff;
+  }
+
+  &:disabled {
+    background-color: var(--pc-green);
+    border-color: var(--pc-green);
+    color: rgba(255, 255, 255, 0.85);
+    opacity: 0.8;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Footer sobre
+// ---------------------------------------------------------------------------
+.pc-footer {
+  background-color: #ffffff;
+  border-top: 1px solid rgba(20, 116, 111, 0.15);
+  color: #5c6b6a; // gris-vert contrasté ≈ 4,6:1 sur blanc → AA petit texte
+
+  small {
+    font-size: 0.875rem;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Texte arabe (Coran) : police Amiri, sens RTL
+// ---------------------------------------------------------------------------
+.arabic-text {
+  font-family: 'Amiri', serif;
+  direction: rtl;
+  font-size: 1.5rem;
+  line-height: 2;
+}
+
+// ---------------------------------------------------------------------------
+// Placeholders de modules (cartes des vues non encore implémentées)
+// ---------------------------------------------------------------------------
+.pc-placeholder-icon {
+  font-size: 3rem;
+  color: var(--pc-green);
+}
+
+// Carte : bordure discrète de marque
+.card {
+  border: 1px solid rgba(20, 116, 111, 0.12);
+}

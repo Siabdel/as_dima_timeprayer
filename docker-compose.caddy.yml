@@ -1,0 +1,30 @@
+# =============================================================================
+# Prière & Coran — Reverse proxy TLS (Caddy)
+# Certificats Let's Encrypt automatiques, HTTP→HTTPS automatique.
+#
+# Usage :
+#   docker compose -f docker-compose.prod.yml -f docker-compose.caddy.yml up -d
+#
+# Remplacez VOTRE_DOMAINE dans deploy/Caddyfile avant le premier lancement.
+# =============================================================================
+
+name: dimatimeprayer-prod
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"    # ACME HTTP-01 + redirection HTTPS
+      - "443:443"  # HTTPS
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # certificats et états ACME — à sauvegarder
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/dev-dist/
+npm-debug.log*
+pnpm-lock.yaml.bak
+
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# Playwright (tests E2E)
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright/
+frontend/.playwright-browsers/

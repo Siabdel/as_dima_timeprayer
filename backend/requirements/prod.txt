@@ -1,0 +1,4 @@
+-r base.txt
+
+# --- Serveur de production --------------------------------------------------
+gunicorn>=22,<24

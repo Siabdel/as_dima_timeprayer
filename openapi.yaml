@@ -1,0 +1,989 @@
+# =============================================================================
+# Prière & Coran — Spécification OpenAPI 3.0 de l'API MVP (/api/v1/)
+# =============================================================================
+# Toutes les réponses d'erreur suivent le format uniforme :
+#   {"error": {"code": "<machine>", "message": "<humain>", "details": {...}?}}
+openapi: 3.0.3
+info:
+  title: Prière & Coran API
+  description: |
+    API du MVP "Prière & Coran" : horaires de prière (Aladhan + cache Redis),
+    notifications Adhan (Web Push / VAPID, planification Celery), lecture et
+    écoute du Saint Coran (proxy Quran.com v4), Qibla et calendrier hégirien.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Serveur local (via le proxy nginx en production)
+
+tags:
+  - name: Auth
+  - name: Prayer Times
+  - name: Notifications
+  - name: Quran
+  - name: Events
+  - name: Library
+  - name: Tools
+
+paths:
+  # ---------------------------------------------------------------------------
+  # Auth
+  # ---------------------------------------------------------------------------
+  /auth/register/:
+    post:
+      tags: [Auth]
+      summary: Inscription
+      description: Crée un compte. Throttle dédié (5/h par IP).
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, password2]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                password2: { type: string }
+      responses:
+        "201":
+          description: Compte créé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  access: { type: string }
+                  refresh: { type: string }
+        "400": { $ref: "#/components/responses/Error400" }
+        "429": { $ref: "#/components/responses/Error429" }
+
+  /auth/token/:
+    post:
+      tags: [Auth]
+      summary: Connexion (obtention du couple JWT)
+      operationId: obtainToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Jetons émis.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [access, refresh]
+                properties:
+                  access: { type: string }
+                  refresh: { type: string }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /auth/token/refresh/:
+    post:
+      tags: [Auth]
+      summary: Renouvellement du jeton d'accès
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh]
+              properties:
+                refresh: { type: string }
+      responses:
+        "200":
+          description: Nouveau jeton d'accès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access: { type: string }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /auth/me/:
+    get:
+      tags: [Auth]
+      summary: Profil de l'utilisateur connecté
+      operationId: me
+      security: [{ jwtBearer: [] }]
+      responses:
+        "200":
+          description: Profil courant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /auth/preferences/:
+    get:
+      tags: [Auth]
+      summary: Préférences de l'utilisateur (notifications, calcul, lieu)
+      operationId: getPreferences
+      security: [{ jwtBearer: [] }]
+      responses:
+        "200":
+          description: Préférences courantes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Preferences" }
+        "401": { $ref: "#/components/responses/Error401" }
+    put:
+      tags: [Auth]
+      summary: Mise à jour des préférences (PUT partiel accepté)
+      operationId: updatePreferences
+      security: [{ jwtBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Preferences" }
+      responses:
+        "200":
+          description: Préférences mises à jour.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Preferences" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  # ---------------------------------------------------------------------------
+  # Prayer Times
+  # ---------------------------------------------------------------------------
+  /prayer-times/:
+    get:
+      tags: [Prayer Times]
+      summary: Horaires de prière (public)
+      description: |
+        Par coordonnées (latitude+longitude) OU par ville (city+country).
+        Cache Redis ; en cas d'indisponibilité d'Aladhan, une entrée périmée
+        (< 48 h) est servie avec stale=true et l'en-tête Warning: 110.
+      operationId: getPrayerTimes
+      parameters:
+        - { name: latitude, in: query, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: longitude, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: city, in: query, schema: { type: string } }
+        - { name: country, in: query, schema: { type: string } }
+        - { name: date, in: query, schema: { type: string, format: date }, description: "Défaut : aujourd'hui" }
+        - { name: method, in: query, schema: { type: integer, default: 3 }, description: "Méthode de calcul Aladhan (3 = MWL, 12 = Umm al-Qura…)" }
+        - name: madhhab
+          in: query
+          schema: { type: string, enum: [standard, hanafi], default: standard }
+      responses:
+        "200":
+          description: Horaires normalisés.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrayerTimes" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /prayer-times/today/:
+    get:
+      tags: [Prayer Times]
+      summary: Horaires du jour au lieu par défaut de l'utilisateur (JWT)
+      operationId: getTodayPrayerTimes
+      security: [{ jwtBearer: [] }]
+      responses:
+        "200":
+          description: Horaires du jour.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrayerTimes" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  # ---------------------------------------------------------------------------
+  # Notifications
+  # ---------------------------------------------------------------------------
+  /notifications/adhan-sounds/:
+    get:
+      tags: [Notifications]
+      summary: Catalogue des sons d'Adhan (public)
+      description: |
+        Liste statique des récitations d'Adhan proposées (fichiers MP3 servis
+        par le frontend). `default` est l'identifiant du son par défaut.
+      operationId: getAdhanSounds
+      responses:
+        "200":
+          description: Catalogue des sons.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sounds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, example: "abdul-basit" }
+                        name: { type: string, example: "Adhan complet" }
+                        reciter: { type: string, example: "Abdul Basit Abdus Samad" }
+                        url: { type: string, example: "/adhan/abdul-basit.mp3" }
+                  default: { type: string, example: "abdul-basit" }
+
+  /notifications/vapid-key/:
+    get:
+      tags: [Notifications]
+      summary: Clé publique VAPID (public)
+      operationId: getVapidKey
+      responses:
+        "200":
+          description: Clé publique.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [public_key]
+                properties:
+                  public_key: { type: string, description: "Clé VAPID base64url (65 octets)" }
+
+  /notifications/subscribe/:
+    post:
+      tags: [Notifications]
+      summary: Enregistre (ou renouvelle) l'abonnement Web Push (JWT)
+      description: Idempotent — upsert par endpoint.
+      operationId: subscribe
+      security: [{ jwtBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint, keys]
+              properties:
+                endpoint: { type: string, format: uri }
+                keys:
+                  type: object
+                  required: [p256dh, auth]
+                  properties:
+                    p256dh: { type: string }
+                    auth: { type: string }
+                user_agent: { type: string }
+      responses:
+        "201":
+          description: Abonnement créé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [subscribed] }
+                  endpoint: { type: string, format: uri }
+        "200":
+          description: Abonnement renouvelé.
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+    delete:
+      tags: [Notifications]
+      summary: Désabonnement (JWT)
+      operationId: unsubscribe
+      security: [{ jwtBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint]
+              properties:
+                endpoint: { type: string, format: uri }
+      responses:
+        "200":
+          description: Désabonnement traité.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [unsubscribed] }
+                  deleted: { type: integer }
+
+  /notifications/status/:
+    get:
+      tags: [Notifications]
+      summary: État de l'abonnement push et dernières notifications (JWT)
+      operationId: getSubscriptionStatus
+      security: [{ jwtBearer: [] }]
+      responses:
+        "200":
+          description: État courant.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscribed: { type: boolean }
+                  subscriptions_count: { type: integer }
+                  recent_notifications:
+                    type: array
+                    maxItems: 5
+                    items:
+                      type: object
+                      properties:
+                        prayer: { type: string }
+                        date: { type: string, format: date }
+                        status: { type: string, enum: [sent, failed, skipped] }
+                        sent_at: { type: string, format: date-time, nullable: true }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /notifications/test/:
+    post:
+      tags: [Notifications]
+      summary: Envoi d'une notification de test (JWT, throttle 5/h)
+      operationId: sendTestNotification
+      security: [{ jwtBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prayer_name:
+                  type: string
+                  enum: [fajr, sunrise, dhuhr, asr, maghrib, isha]
+                  default: dhuhr
+      responses:
+        "200":
+          description: Notification envoyée.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [sent] }
+                  sent: { type: integer }
+                  removed: { type: integer, description: "Abonnements 410 supprimés" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "429": { $ref: "#/components/responses/Error429" }
+
+  # ---------------------------------------------------------------------------
+  # Quran
+  # ---------------------------------------------------------------------------
+  /quran/surahs/:
+    get:
+      tags: [Quran]
+      summary: Liste des 114 sourates (public)
+      operationId: getSurahs
+      responses:
+        "200":
+          description: Sourates.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Surah" }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /quran/surahs/{number}/:
+    get:
+      tags: [Quran]
+      summary: Versets d'une sourate + traductions (public)
+      description: |
+        Avec `words=true`, chaque verset inclut également ses mots (lecture
+        mot à mot : texte arabe, traduction française du mot, translittération
+        et URL audio du mot isolé sur verses.quran.com).
+      operationId: getVerses
+      parameters:
+        - { name: number, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 114 } }
+        - { name: translations, in: query, schema: { type: string, default: fr }, description: "Codes séparés par des virgules (fr,en), max 5" }
+        - { name: words, in: query, schema: { type: boolean, default: false }, description: "Ajoute le tableau `words` de chaque verset (lecture mot à mot)" }
+      responses:
+        "200":
+          description: Versets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Verse" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /quran/words/{surah}/{ayah}/:
+    get:
+      tags: [Quran]
+      summary: Mots d'un verset (lecture mot à mot, public)
+      description: |
+        Chaque mot porte sa traduction française (lexique local, repli sur
+        l'anglais de Quran.com si le mot est absent) ainsi que l'URL du MP3
+        du mot isolé, permettant un surlignage synchronisé mot par mot.
+      operationId: getVerseWords
+      parameters:
+        - { name: surah, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 114 } }
+        - { name: ayah, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Mots du verset.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerseWords" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /quran/reciters/:
+    get:
+      tags: [Quran]
+      summary: Récitateurs disponibles (public)
+      operationId: getReciters
+      responses:
+        "200":
+          description: Récitateurs groupés par type (chapter / verse).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /quran/audio/chapter/{surah}/:
+    get:
+      tags: [Quran]
+      summary: URL audio d'une sourate complète (public)
+      operationId: getChapterAudio
+      parameters:
+        - { name: surah, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 114 } }
+        - { name: reciter_id, in: query, schema: { type: integer, default: 7 } }
+      responses:
+        "200":
+          description: URL de lecture.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_url: { type: string, format: uri }
+                  reciter_id: { type: integer }
+        "400": { $ref: "#/components/responses/Error400" }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /quran/audio/verse/:
+    get:
+      tags: [Quran]
+      summary: URL audio d'un verset + timings (public)
+      operationId: getVerseAudio
+      parameters:
+        - { name: surah, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 114 } }
+        - { name: ayah, in: query, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: reciter_id, in: query, schema: { type: integer, default: 7 } }
+      responses:
+        "200":
+          description: URL + timings.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_url: { type: string, format: uri }
+                  reciter_id: { type: integer }
+                  timings:
+                    type: object
+                    description: "Segments du verset (ms), si disponibles"
+                    additionalProperties: { type: integer }
+        "400": { $ref: "#/components/responses/Error400" }
+        "503": { $ref: "#/components/responses/Error503" }
+
+  /quran/progress/:
+    get:
+      tags: [Quran]
+      summary: Progression de lecture (JWT)
+      operationId: getProgress
+      security: [{ jwtBearer: [] }]
+      responses:
+        "200":
+          description: Progression courante.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadingProgress" }
+        "401": { $ref: "#/components/responses/Error401" }
+    put:
+      tags: [Quran]
+      summary: Mise à jour de la progression (JWT)
+      operationId: updateProgress
+      security: [{ jwtBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [last_surah_number]
+              properties:
+                last_surah_number: { type: integer, minimum: 1, maximum: 114 }
+                last_ayah_number: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: Progression mise à jour.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadingProgress" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  # ---------------------------------------------------------------------------
+  # Tools
+  # ---------------------------------------------------------------------------
+  /qibla/:
+    get:
+      tags: [Tools]
+      summary: Cap vers La Mecque (grand cercle, public)
+      operationId: getQibla
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+      responses:
+        "200":
+          description: Direction et distance.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qibla_direction: { type: number, description: "Cap en degrés depuis le nord géographique" }
+                  compass_point: { type: string, example: SE }
+                  kaaba_distance_km: { type: number }
+        "400": { $ref: "#/components/responses/Error400" }
+
+  /hijri/:
+    get:
+      tags: [Tools]
+      summary: Conversion grégorien → hégirien (public)
+      operationId: getHijri
+      parameters:
+        - { name: date, in: query, schema: { type: string, format: date }, description: "Défaut : aujourd'hui (UTC)" }
+      responses:
+        "200":
+          description: Date hégirienne.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gregorian_date: { type: string, format: date }
+                  hijri_date: { $ref: "#/components/schemas/HijriDate" }
+        "400": { $ref: "#/components/responses/Error400" }
+
+  # ---------------------------------------------------------------------------
+  # Calendrier des fêtes (islamiques + marocaines)
+  # ---------------------------------------------------------------------------
+  /events/:
+    get:
+      tags: [Events]
+      summary: Fêtes d'une année grégorienne (public)
+      description: |
+        Fêtes islamiques (dates hégiriennes converties via le calendrier
+        Umm al-Qura) et fêtes nationales marocaines, triées par date.
+      operationId: listEvents
+      parameters:
+        - { name: year, in: query, schema: { type: integer, minimum: 1900, maximum: 2100 }, description: "Défaut : année courante" }
+      responses:
+        "200":
+          description: Fêtes de l'année demandée.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year: { type: integer }
+                  hijri_years:
+                    type: array
+                    items: { type: integer }
+                    description: "Années hégiriennes couvrant l'année grégorienne"
+                  count: { type: integer }
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/Event" }
+        "400": { $ref: "#/components/responses/Error400" }
+
+  /events/upcoming/:
+    get:
+      tags: [Events]
+      summary: Prochaines fêtes à partir d'aujourd'hui (public)
+      operationId: listUpcomingEvents
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 12, minimum: 1, maximum: 30 } }
+      responses:
+        "200":
+          description: Prochaines fêtes avec jours restants.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  today: { type: string, format: date }
+                  count: { type: integer }
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/Event" }
+
+  /events/hijri-year/:
+    get:
+      tags: [Events]
+      summary: Fêtes islamiques d'une année hégirienne (public)
+      operationId: listHijriYearEvents
+      parameters:
+        - { name: year, in: query, schema: { type: integer, minimum: 1400, maximum: 1500 }, description: "Défaut : année hégirienne courante" }
+      responses:
+        "200":
+          description: Fêtes islamiques de l'année hégirienne, triées par mois hégirien.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hijri_year: { type: integer }
+                  count: { type: integer }
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/Event" }
+        "400": { $ref: "#/components/responses/Error400" }
+
+  # ---------------------------------------------------------------------------
+  # Cahier de douâas et hadiths
+  # ---------------------------------------------------------------------------
+  /library/duas/:
+    get:
+      tags: [Library]
+      summary: Douâas (public)
+      operationId: listDuas
+      parameters:
+        - { name: category, in: query, schema: { type: string, enum: [reveil, repas, maison, mosquee, protection, pardon, vie] } }
+      responses:
+        "200":
+          description: Liste paginée des douâas (texte arabe + translittération + traduction FR + source).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedDuaList"
+
+  /library/hadiths/:
+    get:
+      tags: [Library]
+      summary: Hadiths du Prophète ﷺ (public)
+      operationId: listHadiths
+      parameters:
+        - { name: category, in: query, schema: { type: string, enum: [foi, priere, morale, bienfaisance, relations] } }
+      responses:
+        "200":
+          description: Liste paginée des hadiths (texte arabe + traduction FR + narrateur + source).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedHadithList"
+
+  /library/categories/:
+    get:
+      tags: [Library]
+      summary: Catégories des douâas et hadiths (public)
+      operationId: listLibraryCategories
+      responses:
+        "200":
+          description: Clé + libellé français de chaque catégorie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  duas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: string, example: repas }
+                        label: { type: string, example: Repas }
+                  hadiths:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key: { type: string, example: foi }
+                        label: { type: string, example: "Foi & intentions" }
+
+
+  /health/:
+    get:
+      tags: [Tools]
+      summary: Healthcheck (racine du backend)
+      operationId: health
+      responses:
+        "200":
+          description: Service en ligne.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok] }
+
+components:
+  securitySchemes:
+    jwtBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Error400:
+      description: Requête invalide.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Error401:
+      description: Authentification requise ou jeton invalide.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Error429:
+      description: Quota de débit atteint.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Error503:
+      description: API externe (Aladhan / Quran.com) indisponible.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: invalid_params
+            message:
+              type: string
+              example: "Fournissez soit latitude+longitude, soit city+country."
+            details:
+              type: object
+              description: Détails de validation (présents uniquement pour les 400 DRF).
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, readOnly: true }
+        email: { type: string, format: email }
+        first_name: { type: string, maxLength: 150, nullable: true }
+        last_name: { type: string, maxLength: 150, nullable: true }
+
+    Preferences:
+      type: object
+      properties:
+        id: { type: integer, readOnly: true }
+        notifications_enabled: { type: boolean, default: false }
+        fajr: { type: boolean, default: true }
+        sunrise: { type: boolean, default: false }
+        dhuhr: { type: boolean, default: true }
+        asr: { type: boolean, default: true }
+        maghrib: { type: boolean, default: true }
+        isha: { type: boolean, default: true }
+        quiet_hours_start: { type: string, nullable: true, example: "22:00" }
+        quiet_hours_end: { type: string, nullable: true, example: "06:00" }
+        calculation_method: { type: integer, nullable: true, description: "Méthode Aladhan ; null = défaut global (3)" }
+        madhhab: { type: string, enum: [standard, hanafi], default: standard }
+        adhan_sound_id:
+          type: string
+          nullable: true
+          description: "Son d'Adhan choisi (identifiant du catalogue /notifications/adhan-sounds/) ; null = son par défaut"
+        default_location:
+          nullable: true
+          description: Lieu par défaut (FK locations) — objet ou null.
+          oneOf:
+            - type: object
+              properties:
+                id: { type: integer }
+                label: { type: string }
+                latitude: { type: number }
+                longitude: { type: number }
+                city: { type: string }
+                timezone: { type: string }
+            - type: "null"
+
+    PrayerTimes:
+      type: object
+      required: [timings, location, date, method, madhhab, stale]
+      properties:
+        timings:
+          type: object
+          required: [fajr, sunrise, dhuhr, asr, maghrib, isha]
+          properties:
+            fajr: { type: string, example: "06:23" }
+            sunrise: { type: string, example: "07:45" }
+            dhuhr: { type: string, example: "12:58" }
+            asr: { type: string, example: "15:31" }
+            maghrib: { type: string, example: "18:04" }
+            isha: { type: string, example: "19:26" }
+        timezone: { type: string, example: Europe/Paris }
+        hijri_date: { $ref: "#/components/schemas/HijriDate" }
+        location:
+          type: object
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+            label: { type: string, nullable: true }
+            city: { type: string, nullable: true }
+            country: { type: string, nullable: true }
+        date: { type: string, format: date }
+        method: { type: integer }
+        madhhab: { type: string, enum: [standard, hanafi] }
+        stale:
+          type: boolean
+          description: "true = servie depuis le cache périmé (Aladhan indisponible)"
+
+    HijriDate:
+      type: object
+      properties:
+        date: { type: string, example: "07-06-1448" }
+        day: { type: string, example: "7" }
+        year: { type: string, example: "1448" }
+        month:
+          type: object
+          properties:
+            number: { type: integer, example: 6 }
+            name: { type: string, example: "Jumada al-Akhirah" }
+            name_ar: { type: string, example: "جمادى الآخرة" }
+
+    Surah:
+      type: object
+      properties:
+        number: { type: integer, example: 2 }
+        name: { type: string, example: "Al-Baqarah" }
+        name_ar: { type: string, example: "البقرة" }
+        ayah_count: { type: integer, example: 286 }
+        revelation_place: { type: string, enum: [meccan, medinan] }
+
+    Verse:
+      type: object
+      properties:
+        number: { type: integer, example: 255 }
+        text_uthmani: { type: string, description: "Texte arabe (Uthmani)" }
+        translations:
+          type: array
+          items:
+            type: object
+            properties:
+              language: { type: string, example: french }
+              text: { type: string }
+        words:
+          type: array
+          description: "Présent uniquement si ?words=true (lecture mot à mot)"
+          items: { $ref: "#/components/schemas/QuranWord" }
+
+    QuranWord:
+      type: object
+      description: Un mot coranique pour la lecture mot à mot.
+      properties:
+        position: { type: integer, example: 1 }
+        text_uthmani: { type: string, example: "بِسْمِ" }
+        translation_fr: { type: string, description: "Traduction française du mot (lexique local, repli anglais)", example: "au nom de" }
+        translation_en: { type: string, example: "In (the) name" }
+        transliteration: { type: string, example: "bis'mi" }
+        audio_url: { type: string, description: "URL du MP3 du mot isolé", example: "https://verses.quran.com/wbw/001_001_001.mp3" }
+        is_end: { type: boolean, description: "true pour le marqueur de fin de verset (numéro)" }
+
+    VerseWords:
+      type: object
+      properties:
+        verse_key: { type: string, example: "1:1" }
+        words:
+          type: array
+          items: { $ref: "#/components/schemas/QuranWord" }
+
+    ReadingProgress:
+      type: object
+      properties:
+        last_surah_number: { type: integer, minimum: 1, maximum: 114 }
+        last_ayah_number: { type: integer, minimum: 1 }
+        updated_at: { type: string, format: date-time, readOnly: true }
+
+    Event:
+      type: object
+      properties:
+        id: { type: string, example: eid-al-fitr }
+        name: { type: string, example: "Aïd al-Fitr" }
+        name_ar: { type: string, example: "عيد الفطر" }
+        type: { type: string, enum: [islamic, national], description: "islamic = fête religieuse, national = fête marocaine" }
+        date: { type: string, format: date, example: "2026-03-20" }
+        hijri_date:
+          nullable: true
+          description: "Présent uniquement pour les fêtes islamiques"
+          type: object
+          properties:
+            day: { type: integer, example: 1 }
+            month: { type: integer, example: 10 }
+            year: { type: integer, example: 1447 }
+            month_name: { type: string, example: "Shawwal" }
+            month_name_ar: { type: string }
+        description: { type: string }
+        days_until:
+          type: integer
+          description: "Présent uniquement dans /events/upcoming/"
+
+    Dua:
+      type: object
+      properties:
+        id: { type: integer }
+        category: { type: string, enum: [reveil, repas, maison, mosquee, protection, pardon, vie] }
+        title: { type: string, example: "Douâa avant de manger" }
+        text_ar: { type: string, description: "Texte arabe" }
+        transliteration: { type: string, description: "Translittération latine" }
+        translation_fr: { type: string }
+        source: { type: string, example: "Sahîh al-Bukhârî 5376" }
+        order: { type: integer }
+
+    Hadith:
+      type: object
+      properties:
+        id: { type: integer }
+        category: { type: string, enum: [foi, priere, morale, bienfaisance, relations] }
+        title: { type: string, example: "Les actes valent par les intentions" }
+        text_ar: { type: string, description: "Texte arabe" }
+        translation_fr: { type: string }
+        narrator: { type: string, example: "'Umar ibn al-Khattâb" }
+        source: { type: string, example: "Sahîh al-Bukhârî 1" }
+        order: { type: integer }
+
+    PaginatedDuaList:
+      type: object
+      properties:
+        count: { type: integer }
+        next: { type: string, nullable: true }
+        previous: { type: string, nullable: true }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/Dua" }
+
+    PaginatedHadithList:
+      type: object
+      properties:
+        count: { type: integer }
+        next: { type: string, nullable: true }
+        previous: { type: string, nullable: true }
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/Hadith" }

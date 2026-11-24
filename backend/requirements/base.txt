@@ -1,0 +1,23 @@
+# =============================================================================
+# Prière & Coran — dépendances communes (dev + prod)
+# Versionnées volontairement de manière lâche (plage) pour un MVP évolutif.
+# =============================================================================
+
+# --- Web / API --------------------------------------------------------------
+Django>=5.0,<5.3
+djangorestframework>=3.15,<3.16
+djangorestframework-simplejwt>=5.3,<5.4
+django-cors-headers>=4.4,<5
+
+# --- Asynchrone & cache -----------------------------------------------------
+celery[redis]>=5.4,<5.6
+django-redis>=5.4,<6
+redis>=5.0,<6
+
+# --- Base de données --------------------------------------------------------
+psycopg[binary]>=3.2,<3.3
+
+# --- Intégrations externes --------------------------------------------------
+requests>=2.32,<3          # Aladhan + Quran Foundation API v4
+pywebpush>=2.0,<3          # Web Push (VAPID) — notifications Adhan
+hijridate>=2.3,<3          # conversion grégorien -> hégirien (fallback hors Aladhan)
