@@ -1,6 +1,6 @@
 {
   "name": "priere-et-coran-frontend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Frontend Vue 3 du MVP « Prière & Coran » : horaires de prière, rappels Adhan et lecture du Saint Coran — sans publicité.",

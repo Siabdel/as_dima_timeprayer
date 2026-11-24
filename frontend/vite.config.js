@@ -33,12 +33,21 @@ export default defineConfig({
       manifest: {
         name: 'Prière & Coran',
         short_name: 'Prière&Coran',
-        description: 'Horaires de prière, rappels Adhan et lecture du Saint Coran',
+        description: 'Horaires de prière, météo, rappels Adhan et lecture du Saint Coran',
         theme_color: '#14746F',
         background_color: '#f8f9fa',
         display: 'standalone',
+        id: '/',
         start_url: '/',
+        scope: '/',
         lang: 'fr',
+        categories: ['lifestyle', 'books', 'education'],
+        // Raccourcis (appui long sur l'icône de l'app installée)
+        shortcuts: [
+          { name: 'Horaires de prière', url: '/', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Coran', url: '/quran', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Réglages', url: '/settings', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] }
+        ],
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },

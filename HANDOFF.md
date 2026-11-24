@@ -42,3 +42,9 @@ Dernière mise à jour : 2026-11-24. Branche `main`.
 
 ## Prochaines étapes
 Voir [TODO.md](TODO.md) (vérifications navigateur, migration prod, limites connues).
+
+## PWA (v0.2.0)
+- `sw.js` appelle maintenant `skipWaiting()` + `clientsClaim()` : sans cela, avec `registerType: 'autoUpdate'`, une nouvelle version restait « en attente » tant qu'un onglet était ouvert.
+- Manifeste : `id`, `scope`, catégories et raccourcis (Horaires, Coran, Réglages).
+- Le service worker n'est actif qu'en build de production (`npm run build` / image `prod` + nginx), pas avec `npm run dev`.
+- Les récitations locales (`public/quran/`, 816 Mo) ne sont pas pré-cachées ni cachées par le SW.

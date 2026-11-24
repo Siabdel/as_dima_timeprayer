@@ -49,8 +49,16 @@ registerRoute(
   })
 );
 
-// Prend le contrôle de toutes les fenêtres dès l'activation (autoUpdate).
+// Mise à jour immédiate (registerType « autoUpdate ») : la nouvelle version
+// s'active sans attendre la fermeture des onglets, puis la page se recharge.
+self.skipWaiting();
+// Prend le contrôle de toutes les fenêtres dès l'activation.
 clientsClaim();
+
+// Compatibilité avec registerSW({ immediate }) qui demande l'activation par message.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 // ---------------------------------------------------------------------------
 // Événement « push » : affiche la notification et orchestre la lecture du son
