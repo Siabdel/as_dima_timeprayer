@@ -157,6 +157,27 @@ class TestAudioEndpoints:
         assert resp.data["audio_url"] == "https://download.quranicaudio.com/quran/2.mp3"
 
     @responses.activate
+    def test_chapter_audio_with_timestamps(self, api_client):
+        responses.add(
+            responses.GET,
+            f"{quran_client.settings.QURAN_API_BASE_URL}/chapter_recitations/7/1",
+            json={"audio_file": {
+                "audio_url": "https://download.quranicaudio.com/quran/1.mp3",
+                "timestamps": [
+                    {"verse_key": "1:1", "timestamp_from": 0, "timestamp_to": 5000,
+                     "segments": [[1, 0, 900], [2, 900, 2000]]},
+                    {"verse_key": "bad"},
+                ],
+            }},
+            status=200,
+        )
+        resp = api_client.get("/api/v1/quran/audio/chapter/1/", {"reciter_id": 7})
+        assert resp.status_code == 200
+        assert resp.data["timestamps"] == [
+            {"ayah": 1, "from": 0, "to": 5000, "segments": [[1, 0, 900], [2, 900, 2000]]}
+        ]
+
+    @responses.activate
     def test_verse_audio_with_timings(self, api_client):
         responses.add(
             responses.GET,

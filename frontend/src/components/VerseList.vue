@@ -11,7 +11,7 @@
 // - Progression : si l'utilisateur est connecté, PUT /quran/progress/ à
 //   chaque verset consulté (debounce 2 s, non bloquant).
 // ===========================================================================
-import { reactive, watch, onBeforeUnmount } from 'vue';
+import { reactive, watch, nextTick, onBeforeUnmount } from 'vue';
 import { useQuranPlayerStore } from '../stores/quranPlayer';
 import { useAuthStore } from '../stores/auth';
 import { updateProgress } from '../api/quran';
@@ -28,6 +28,8 @@ const props = defineProps({
   wordByWord: { type: Boolean, default: false },
   /** Index du mot en cours par verset : { [ayahNumber]: index }. */
   activeWordIndex: { type: Object, default: () => ({}) },
+  /** Verset en cours de récitation (suivi verset/mot), null si aucun. */
+  followAyah: { type: Number, default: null },
 });
 
 const emit = defineEmits(['play-verse', 'word-click', 'active-word']);
@@ -100,8 +102,14 @@ function onPlaySurah() {
   player.playSurah(props.surah);
 }
 
+/** Vrai si CE verset est celui suivi pendant la récitation de la sourate. */
+function isFollowedVerse(verse) {
+  return props.followAyah !== null && props.followAyah === verse.ayah_number;
+}
+
 /** Vrai si CE verset est la source actuellement chargée dans le lecteur. */
 function isActiveVerse(verse) {
+  if (isFollowedVerse(verse)) return true;
   return (
     player.currentSurah === props.surah &&
     player.currentAyah === verse.ayah_number &&
@@ -152,6 +160,20 @@ watch(
   }
 );
 
+// Défilement automatique vers le verset récité (centré, doux ; instantané si
+// l'utilisateur préfère réduire les animations).
+watch(
+  () => props.followAyah,
+  async (ayah) => {
+    if (ayah === null) return;
+    await nextTick();
+    const el = document.getElementById(`verse-${props.surah}-${ayah}`);
+    if (!el || typeof el.scrollIntoView !== 'function') return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+  }
+);
+
 onBeforeUnmount(() => {
   if (progressTimer) clearTimeout(progressTimer);
 });
@@ -187,9 +209,14 @@ onBeforeUnmount(() => {
     <ol class="list-unstyled mb-0 pc-verse-list">
       <li
         v-for="verse in verses"
+        :id="`verse-${surah}-${verse.ayah_number}`"
         :key="verse.ayah_number"
         class="card mb-3 pc-verse-card"
-        :class="{ 'pc-verse-active': isActiveVerse(verse) }"
+        :class="{
+          'pc-verse-active': isActiveVerse(verse),
+          'pc-verse-following': isFollowedVerse(verse),
+        }"
+        :aria-current="isFollowedVerse(verse) ? 'true' : undefined"
       >
         <div class="card-body py-3">
           <div class="d-flex align-items-start gap-3">
@@ -294,6 +321,19 @@ onBeforeUnmount(() => {
 
 .pc-verse-card {
   border-radius: 0.75rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  scroll-margin-block: 5rem;
+}
+
+/* Verset suivi pendant la récitation : encadré net (en plus du fond or) */
+.pc-verse-following {
+  box-shadow: 0 0 0 2px var(--pc-green);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-verse-card {
+    transition: none;
+  }
 }
 
 /* Colonne latérale : badge numéro + bouton lecture */

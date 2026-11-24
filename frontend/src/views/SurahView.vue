@@ -59,6 +59,35 @@ const loadError = ref('');
 // --- Mode « mot à mot » -------------------------------------------------------
 // Le switch est adossé au store (persisté dans le localStorage « pc_word_mode ») :
 // l'état survit donc à la navigation et au rechargement de la page.
+// Suivi de la récitation (verset / mot), adossé au store (persisté).
+const followModes = [
+  { value: 'off', label: 'Désactivé' },
+  { value: 'ayah', label: 'Verset par verset' },
+  { value: 'word', label: 'Mot par mot' },
+];
+const followMode = computed({
+  get: () => player.followMode,
+  set: (value) => player.setFollowMode(value),
+});
+
+/** Le suivi mot par mot a besoin du tableau `words` pour rendre les mots. */
+const showWords = computed(() => wordByWord.value || followMode.value === 'word');
+
+/** Mot actif transmis à VerseList : séquence mot à mot OU suivi de récitation. */
+const activeWords = computed(() => {
+  if (followMode.value === 'word' && player.followAyah !== null && player.followWordIndex >= 0) {
+    return { [player.followAyah]: player.followWordIndex };
+  }
+  return player.activeWordIndex;
+});
+
+/** Verset suivi (null hors suivi ou hors lecture de la sourate entière). */
+const followedAyah = computed(() =>
+  followMode.value !== 'off' && player.currentSurah === surahNumber.value
+    ? player.followAyah
+    : null
+);
+
 const wordByWord = computed({
   get: () => player.wordByWordMode,
   set: (value) => player.setWordByWordMode(value),
@@ -80,7 +109,7 @@ async function loadVerses() {
     const { data } = await getVerses(
       surahNumber.value,
       selectedTranslations.value,
-      { words: wordByWord.value }
+      { words: showWords.value }
     );
     verses.value = Array.isArray(data) ? data : [];
   } catch {
@@ -95,7 +124,7 @@ async function loadVerses() {
 watch(selectedTranslations, loadVerses, { deep: true });
 
 // Bascule du mode mot à mot → refetch avec (ou sans) `words=true`.
-watch(() => player.wordByWordMode, loadVerses);
+watch(showWords, loadVerses);
 
 // Navigation sourate → sourate (retour puis nouvelle sourate) : rechargement.
 watch(
@@ -139,6 +168,8 @@ function onStopWords() {
 
 /** Clic sur un mot : reprend la séquence À PARTIR de ce mot. */
 function onWordClick({ ayah, index }) {
+  // Suivi seul (sans séquence mot à mot) : saute à ce mot dans la récitation.
+  if (!wordByWord.value && player.seekToWord(ayah, index)) return;
   player.playWordsFrom(versesWithWords.value, ayah, index, surahNumber.value);
 }
 
@@ -230,6 +261,27 @@ onMounted(() => {
             </label>
           </div>
 
+          <!-- Suivi de la récitation : verset encadré / mot illuminé -->
+          <div
+            class="btn-group pc-follow-group"
+            role="radiogroup"
+            aria-label="Suivi de la récitation"
+          >
+            <template v-for="m in followModes" :key="m.value">
+              <input
+                :id="`pc-follow-${m.value}`"
+                v-model="followMode"
+                class="btn-check"
+                type="radio"
+                name="pc-follow-mode"
+                :value="m.value"
+              />
+              <label class="btn btn-sm btn-outline-secondary" :for="`pc-follow-${m.value}`">
+                {{ m.label }}
+              </label>
+            </template>
+          </div>
+
           <!-- Lecture mot à mot : chaque mot illuminé au rythme de la récitation -->
           <div class="form-check form-switch pc-word-switch">
             <input
@@ -245,6 +297,11 @@ onMounted(() => {
             </label>
           </div>
         </div>
+        <p class="form-text mb-1">
+          <strong>Suivi de la récitation</strong> : pendant « Écouter la sourate »,
+          le verset (ou le mot) récité est surligné et la page défile
+          automatiquement.
+        </p>
         <p id="pc-word-mode-help" class="form-text mb-0">
           Chaque mot arabe est illuminé au rythme de la récitation, avec sa
           traduction française juste en dessous.
@@ -301,8 +358,9 @@ onMounted(() => {
         :verses="verses"
         :surah="surahNumber"
         :show-translations="selectedTranslations.length > 0"
-        :word-by-word="wordByWord"
-        :active-word-index="player.activeWordIndex"
+        :word-by-word="showWords"
+        :active-word-index="activeWords"
+        :follow-ayah="followedAyah"
         @play-verse="onPlayVerse"
         @word-click="onWordClick"
         @active-word="onActiveWord"
@@ -375,6 +433,12 @@ onMounted(() => {
 .pc-word-status {
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+}
+
+.pc-follow-group .btn-check:checked + .btn {
+  background-color: var(--pc-green);
+  border-color: var(--pc-green);
+  color: #ffffff;
 }
 
 .pc-spinner {

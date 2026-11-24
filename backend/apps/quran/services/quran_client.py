@@ -271,12 +271,41 @@ def fetch_chapter_words(surah: int) -> list[dict]:
 
 def fetch_chapter_audio(surah: int, reciter_id: int) -> dict:
     """URL audio de la sourate complète pour un réciteur donné."""
-    payload = _get(f"/chapter_recitations/{reciter_id}/{surah}")
+    # segments=true : horodatages par verset (et par mot) pour le suivi visuel.
+    payload = _get(f"/chapter_recitations/{reciter_id}/{surah}", {"segments": "true"})
     # L'API v4 imbrique l'URL : {"audio_file": {"audio_url": "https://..."}}
-    audio_url = (payload.get("audio_file") or {}).get("audio_url")
+    audio_file = payload.get("audio_file") or {}
+    audio_url = audio_file.get("audio_url")
     if not audio_url:
         raise QuranAPIError("Aucune URL audio pour cette sourate.")
-    return {"audio_url": audio_url}
+    return {
+        "audio_url": audio_url,
+        "timestamps": normalize_timestamps(audio_file.get("timestamps")),
+    }
+
+
+def normalize_timestamps(raw) -> list[dict]:
+    """
+    Normalise les horodatages d'un audio chapitre (ms) :
+    [{ayah, from, to, segments: [[position_mot, début, fin], ...]}].
+    Les entrées invalides sont ignorées (le suivi se dégrade, jamais d'erreur).
+    """
+    result = []
+    for item in raw or []:
+        try:
+            ayah = int(str(item.get("verse_key", "")).split(":")[1])
+            start = int(item["timestamp_from"])
+            end = int(item["timestamp_to"])
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError):
+            continue
+        segments = []
+        for seg in item.get("segments") or []:
+            try:
+                segments.append([int(seg[0]), int(seg[1]), int(seg[2])])
+            except (IndexError, TypeError, ValueError):
+                continue
+        result.append({"ayah": ayah, "from": start, "to": end, "segments": segments})
+    return result
 
 
 def fetch_verse_audio(surah: int, ayah: int, reciter_id: int) -> dict:

@@ -474,6 +474,18 @@ paths:
                 properties:
                   audio_url: { type: string, format: uri }
                   reciter_id: { type: integer }
+                  timestamps:
+                    type: array
+                    description: "Horodatages (ms) par verset, avec segments [position_mot, début, fin] pour le suivi mot à mot"
+                    items:
+                      type: object
+                      properties:
+                        ayah: { type: integer }
+                        from: { type: integer }
+                        to: { type: integer }
+                        segments:
+                          type: array
+                          items: { type: array, items: { type: integer } }
         "400": { $ref: "#/components/responses/Error400" }
         "503": { $ref: "#/components/responses/Error503" }
 

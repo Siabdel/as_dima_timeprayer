@@ -18,6 +18,12 @@ const RECITER_KEY = 'pc_reciter_id';
 /** Clé de persistance du mode de lecture « mot à mot ». */
 const WORD_MODE_KEY = 'pc_word_mode';
 
+/** Clé de persistance du mode de suivi (off | ayah | word). */
+const FOLLOW_MODE_KEY = 'pc_follow_mode';
+
+/** Modes de suivi de la récitation autorisés. */
+const FOLLOW_MODES = ['off', 'ayah', 'word'];
+
 /** Récitateur par défaut (id 7 = Mishary Alafasy dans le contrat API). */
 const DEFAULT_RECITER_ID = 7;
 
@@ -50,6 +56,22 @@ function readStoredWordMode() {
   } catch {
     // localStorage indisponible (navigation privée stricte, etc.).
     return false;
+  }
+}
+
+/** Identifiant de la boucle requestAnimationFrame de synchronisation. */
+let followRaf = null;
+
+/**
+ * Lit le mode de suivi persisté (localStorage) avec repli sur « off ».
+ * @returns {'off'|'ayah'|'word'}
+ */
+function readStoredFollowMode() {
+  try {
+    const raw = window.localStorage.getItem(FOLLOW_MODE_KEY);
+    return FOLLOW_MODES.includes(raw) ? raw : 'off';
+  } catch {
+    return 'off';
   }
 }
 
@@ -100,6 +122,14 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
     wordsQueuePosition: -1,
     /** Numéro de verset en cours de séquence mot à mot (null si aucune). */
     wordsSurah: null,
+    /** Suivi de la récitation : 'off' | 'ayah' (verset) | 'word' (mot). */
+    followMode: readStoredFollowMode(),
+    /** Horodatages (ms) de l'audio chapitre : [{ayah, from, to, segments}]. */
+    chapterTimestamps: [],
+    /** Verset en cours de récitation (audio chapitre), null si inconnu. */
+    followAyah: null,
+    /** Index (0-based) du mot récité dans followAyah, -1 si inconnu. */
+    followWordIndex: -1,
   }),
 
   getters: {
@@ -138,7 +168,9 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       // Les flèches capturent `this` (l'instance du store) une seule fois.
       el.addEventListener('timeupdate', () => {
         this.currentTime = el.currentTime || 0;
+        this._syncFollow();
       });
+      el.addEventListener('seeked', () => this._syncFollow());
       el.addEventListener('loadedmetadata', () => {
         this.duration = Number.isFinite(el.duration) ? el.duration : 0;
       });
@@ -147,12 +179,16 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       });
       el.addEventListener('play', () => {
         this.playing = true;
+        this._startFollowLoop();
       });
       el.addEventListener('pause', () => {
         this.playing = false;
+        this._stopFollowLoop();
       });
       el.addEventListener('ended', () => {
         this.playing = false;
+        this._stopFollowLoop();
+        this._resetFollow();
       });
       el.addEventListener('error', () => {
         // Ignore les « erreurs » provoquées par stop() (src vide).
@@ -219,6 +255,10 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       try {
         const { data } = await getChapterAudio(surahNumber, this.reciterId);
         if (this.currentSurah !== surahNumber || this.currentAyah !== null) return;
+        this.chapterTimestamps = Array.isArray(data?.timestamps)
+          ? data.timestamps
+          : [];
+        this._resetFollow();
         await this._playUrl(data?.audio_url);
       } catch {
         this.error = "Impossible de récupérer l'audio de la sourate.";
@@ -249,6 +289,8 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       if (reciterId !== undefined) this.setReciter(reciterId);
       this.currentSurah = surahNumber;
       this.currentAyah = ayahNumber;
+      this.chapterTimestamps = [];
+      this._resetFollow();
       this.error = null;
       this.loading = true;
       try {
@@ -306,6 +348,9 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       this.audioUrl = null;
       this.currentSurah = null;
       this.currentAyah = null;
+      this.chapterTimestamps = [];
+      this._stopFollowLoop();
+      this._resetFollow();
     },
 
     /**
@@ -349,6 +394,11 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
             : await getChapterAudio(surah, this.reciterId);
         const url = data?.audio_url;
         if (!url || !audioEl) return;
+        if (ayah === null) {
+          this.chapterTimestamps = Array.isArray(data?.timestamps)
+            ? data.timestamps
+            : [];
+        }
         this.audioUrl = url;
         audioEl.src = url;
         audioEl.load();
@@ -389,6 +439,99 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       } catch {
         this.playing = false;
       }
+    },
+
+    // =======================================================================
+    // Suivi de la récitation (surbrillance verset / mot)
+    // -----------------------------------------------------------------------
+    // Pendant la lecture d'une sourate entière, la position de l'audio est
+    // confrontée aux horodatages de l'API pour déterminer le verset (et le
+    // mot) en cours de récitation. Boucle requestAnimationFrame : plus fine
+    // que « timeupdate » (≈ 4 Hz), nécessaire pour le suivi mot à mot.
+    // =======================================================================
+
+    /**
+     * Choisit et persiste le mode de suivi.
+     * @param {'off'|'ayah'|'word'} mode
+     */
+    setFollowMode(mode) {
+      const next = FOLLOW_MODES.includes(mode) ? mode : 'off';
+      this.followMode = next;
+      try {
+        window.localStorage.setItem(FOLLOW_MODE_KEY, next);
+      } catch {
+        // Persistance indisponible : le mode reste valable pour la session.
+      }
+      if (next === 'off') this._resetFollow();
+      else this._syncFollow();
+    },
+
+    /**
+     * Saute au début d'un mot (ou d'un verset si le mot est inconnu) de
+     * l'audio chapitre. Sans effet sans horodatages.
+     * @param {number} ayah
+     * @param {number} [wordIndex] index 0-based du mot
+     * @returns {boolean} vrai si la position a été déplacée
+     */
+    seekToWord(ayah, wordIndex = -1) {
+      const entry = this.chapterTimestamps.find((t) => t.ayah === Number(ayah));
+      if (!entry) return false;
+      let startMs = entry.from;
+      const seg = (entry.segments || []).find((s) => s[0] === wordIndex + 1);
+      if (seg) startMs = seg[1];
+      this.seek(startMs / 1000);
+      return true;
+    },
+
+    /** Remet à zéro le suivi (usage interne). */
+    _resetFollow() {
+      this.followAyah = null;
+      this.followWordIndex = -1;
+    },
+
+    /**
+     * Calcule verset/mot en cours depuis la position audio (usage interne).
+     * Inactif hors lecture d'une sourate entière ou si le suivi est coupé.
+     */
+    _syncFollow() {
+      if (
+        this.followMode === 'off' ||
+        this.currentAyah !== null ||
+        !this.chapterTimestamps.length ||
+        !audioEl
+      ) {
+        if (this.followAyah !== null) this._resetFollow();
+        return;
+      }
+      const ms = (audioEl.currentTime || 0) * 1000;
+      const entry = this.chapterTimestamps.find((t) => ms >= t.from && ms < t.to);
+      if (!entry) return;
+      if (this.followAyah !== entry.ayah) this.followAyah = entry.ayah;
+      let wordIndex = -1;
+      if (this.followMode === 'word') {
+        const seg = (entry.segments || []).find((s) => ms >= s[1] && ms < s[2]);
+        // Entre deux segments : on garde le dernier mot (pas de clignotement).
+        wordIndex = seg ? seg[0] - 1 : this.followWordIndex;
+      }
+      if (this.followWordIndex !== wordIndex) this.followWordIndex = wordIndex;
+    },
+
+    /** Démarre la boucle de synchronisation (usage interne). */
+    _startFollowLoop() {
+      if (followRaf !== null || typeof requestAnimationFrame !== 'function') return;
+      const tick = () => {
+        this._syncFollow();
+        followRaf = requestAnimationFrame(tick);
+      };
+      followRaf = requestAnimationFrame(tick);
+    },
+
+    /** Arrête la boucle de synchronisation (usage interne). */
+    _stopFollowLoop() {
+      if (followRaf !== null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(followRaf);
+      }
+      followRaf = null;
     },
 
     // =======================================================================

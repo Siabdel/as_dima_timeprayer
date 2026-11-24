@@ -54,9 +54,13 @@ class ChapterVerseWordsSerializer(serializers.Serializer):
 
 
 class ChapterAudioSerializer(serializers.Serializer):
-    """URL audio d'une sourate complète."""
+    """URL audio d'une sourate complète + horodatages (ms) par verset/mot."""
 
     audio_url = serializers.URLField()
+    timestamps = serializers.ListField(
+        child=serializers.DictField(child=serializers.JSONField()),
+        required=False,
+    )
 
 
 class VerseAudioSerializer(serializers.Serializer):
