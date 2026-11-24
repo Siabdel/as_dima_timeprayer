@@ -20,6 +20,8 @@ outils (Qibla, tasbih) et bibliothèque.
   - *Lecture mot à mot* : séquence de mots isolés avec traduction.
   - *Suivi de la récitation* : pendant l'écoute d'une sourate, le **verset** (ou le **mot**)
     récité est surligné et la page défile automatiquement (horodatages Quran.com).
+  - *Récitateurs hébergés localement* : **Cheikh Abderrahmane Benmoussa** (114 sourates,
+    MP3 servis par l'application — voir ci-dessous).
 - **Réglages** (compte connecté) :
   - *Ma position* : fuseau horaire auto/manuel (IANA), méthode de calcul par pays, langue.
   - *Alertes & Adhan* : mode par prière (sonnerie, bip, vibreur, silencieux), Adhan du Fajr,
@@ -27,6 +29,28 @@ outils (Qibla, tasbih) et bibliothèque.
   - *Audio* : récitateur par défaut avec aperçu, cache audio hors ligne vidable.
   - Notifications push, son de l'Adhan, profil.
 - Calendrier hégirien et fêtes, outils (Qibla, tasbih), bibliothèque.
+
+## Récitateurs hébergés localement
+
+Certains récitateurs ne sont pas disponibles sur les CDN (quran.com, mp3quran.net).
+Leurs MP3 sont alors **hébergés par l'application** (`frontend/public/quran/<slug>/`)
+pour garantir la disponibilité et éviter toute dépendance externe.
+
+| Récitateur | Riwaya | Sourates | Taille | Source |
+|---|---|---|---|---|
+| **Cheikh Abderrahmane Benmoussa** | Hafs | 114 (001.mp3 … 114.mp3) | 833 Mo (64 kbps) | archive.org `AbdulrahmanBenmoussa` |
+
+**Intégration** : catalogue [`local_reciters.py`](backend/apps/quran/local_reciters.py),
+exposé par `GET /quran/reciters/` (avec `local: true`). `GET /quran/audio/chapter/{n}/?reciter_id=benmoussa`
+renvoie `/quran/benmoussa/00N.mp3`. Le sélecteur de récitateur du lecteur audio accepte
+les identifiants **numériques** (CDN externe) comme **textuels** (local).
+
+**Ajouter un récitateur local** :
+1. Déposer les MP3 dans `frontend/public/quran/<slug>/001.mp3 … 114.mp3`
+2. Ajouter une entrée dans `LOCAL_RECITERS` (`local_reciters.py`).
+
+> ⚠️ Ces fichiers (~833 Mo) ne sont pas versionnés dans Git ; assurez-vous de les
+> inclure dans le déploiement (rsync, volume, ou objet storage).
 
 ## Démarrage
 

@@ -35,7 +35,10 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
 // Les requêtes « Range » (lecture/seek) sont servies depuis le cache ; la page
 // Réglages permet de le vider (cache « pc-audio-v1 »).
 registerRoute(
-  ({ request }) => request.destination === 'audio',
+  // Audio externe uniquement : les récitations hébergées par l'app
+  // (/quran/<slug>/*.mp3, jusqu'à ~65 Mo) sont déjà locales — inutile de les dupliquer.
+  ({ request, url }) =>
+    request.destination === 'audio' && url.origin !== self.location.origin,
   new CacheFirst({
     cacheName: 'pc-audio-v1',
     plugins: [

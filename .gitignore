@@ -45,3 +45,9 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/.playwright/
 frontend/.playwright-browsers/
+
+# MP3 de récitation hébergés localement (~833 Mo) — à déployer séparément
+frontend/public/quran/*/
+
+# Récitations audio hébergées (volumineuses : à déployer hors git)
+frontend/public/quran/

@@ -182,13 +182,25 @@ class ChapterAudioView(APIView):
                 "invalid_params", "Le numéro de sourate doit être entre 1 et 114.",
                 status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            reciter_id = int(request.query_params.get("reciter_id", 7))
-        except ValueError:
-            return _error_response(
-                "invalid_params", "reciter_id doit être un entier.",
-                status.HTTP_400_BAD_REQUEST,
-            )
+        # reciter_id : numérique (Quran.com / CDN externe) OU texte pour les
+        # récitateurs hébergés localement (ex. « benmoussa »).
+        raw_reciter = request.query_params.get("reciter_id", "7")
+        reciter_id = raw_reciter.strip()
+        if not reciter_id:
+            reciter_id = "7"
+        if reciter_id.isdigit():
+            reciter_id = int(reciter_id)
+        else:
+            # Identifiant texte : doit correspondre à un récitateur local connu.
+            from .local_reciters import get_local_reciter
+
+            if get_local_reciter(reciter_id) is None:
+                return _error_response(
+                    "invalid_params",
+                    "reciter_id inconnu : utilisez un identifiant numérique "
+                    "ou un récitateur local de la liste /quran/reciters/.",
+                    status.HTTP_400_BAD_REQUEST,
+                )
         try:
             audio = quran_client.fetch_chapter_audio(surah, reciter_id)
         except quran_client.QuranAPIError as exc:

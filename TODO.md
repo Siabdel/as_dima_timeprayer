@@ -16,7 +16,8 @@
 - [ ] Qualité audio (kbps) : impossible avec l'API Quran.com actuelle ; envisager une autre source.
 - [ ] Muezzins supplémentaires (La Mecque, Médine, Al-Aqsa) : ajouter les mp3 libres de droits dans `frontend/public/adhan/` + `backend/apps/notifications/adhan_sounds.py`.
 - [x] Récitateurs marocains Warsh (Qazabri, Al-Kouchi, Benkirane, Lharraz, Belalya) via mp3quran.net (`EXTRA_RECITERS`). Sans horodatages : pas de suivi verset/mot. Le texte affiché reste en Hafs.
-- [ ] Cheikh Abderrahmane Benmoussa : seulement 60 fichiers par *hizb* (archive.org `TvQuran.com__Benmoussa`, droits non clairs), pas par sourate ; Adhan de Benmoussa : aucun enregistrement trouvé. À intégrer si vous fournissez des fichiers dont vous avez les droits.
+- [x] Cheikh Abderrahmane Benmoussa : 114 mp3 locaux dans `frontend/public/quran/benmoussa/` (non versionnés, 816 Mo ; à déployer sur le serveur à part). Catalogue : `backend/apps/quran/local_reciters.py`. À vérifier : la riwaya affichée (« Hafs ») — Benmoussa est connu pour le Warsh ; corriger `riwaya` si besoin.
+- [ ] Adhan de Benmoussa : aucun enregistrement fourni.
 - [ ] Cheikh Abdelhamid Hssain : aucune source audio libre trouvée.
 - [ ] Méthode « Grande Mosquée de Paris » : pas de méthode Aladhan dédiée (UOIF proposée) ; envisager des angles personnalisés.
 - [ ] Adhan joué seulement app ouverte (limite navigateur) ; envisager l'app Android (TWA, voir DEPLOYMENT.md partie B) pour un son natif.

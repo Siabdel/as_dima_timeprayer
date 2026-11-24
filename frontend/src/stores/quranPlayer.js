@@ -82,8 +82,13 @@ function readStoredFollowMode() {
 function readStoredReciter() {
   try {
     const raw = window.localStorage.getItem(RECITER_KEY);
-    const id = raw === null ? Number.NaN : Number.parseInt(raw, 10);
-    return Number.isInteger(id) && id > 0 ? id : DEFAULT_RECITER_ID;
+    if (raw === null) return DEFAULT_RECITER_ID;
+    const numeric = Number.parseInt(raw, 10);
+    // Numérique (Quran.com / CDN) ou identifiant texte local (« benmoussa »).
+    if (Number.isInteger(numeric) && String(numeric) === raw && numeric > 0) {
+      return numeric;
+    }
+    return raw.trim() || DEFAULT_RECITER_ID;
   } catch {
     // localStorage indisponible (navigation privée stricte, etc.).
     return DEFAULT_RECITER_ID;
@@ -210,14 +215,24 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
 
     /**
      * Sélectionne et persiste le récitateur.
+     *
+     * Les identifiants peuvent être NUMÉRIQUES (Quran.com, CDN externe) ou
+     * TEXTUELS pour les récitateurs hébergés localement (ex. « benmoussa »).
      * @param {number|string} id
      */
     setReciter(id) {
-      const parsed = Number.parseInt(id, 10);
-      if (!Number.isInteger(parsed) || parsed <= 0) return;
-      this.reciterId = parsed;
+      const raw = String(id ?? '').trim();
+      if (!raw) return;
+      const numeric = Number.parseInt(raw, 10);
+      // Identifiant numérique valide → conservé sous forme de nombre ;
+      // sinon, identifiant texte local (ex. « benmoussa »).
+      const value =
+        Number.isInteger(numeric) && String(numeric) === raw && numeric > 0
+          ? numeric
+          : raw;
+      this.reciterId = value;
       try {
-        window.localStorage.setItem(RECITER_KEY, String(parsed));
+        window.localStorage.setItem(RECITER_KEY, String(value));
       } catch {
         // Persistance indisponible : le choix reste valable pour la session.
       }

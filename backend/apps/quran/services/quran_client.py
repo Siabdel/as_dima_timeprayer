@@ -289,11 +289,25 @@ EXTRA_RECITERS = [
 
 def extra_reciters_public() -> list[dict]:
     """Récitateurs supplémentaires, sans l'URL serveur (format de /reciters/)."""
-    return [{k: r[k] for k in ("id", "name", "style")} for r in EXTRA_RECITERS]
+    from apps.quran.local_reciters import as_list as local_as_list
+
+    return [
+        *[{k: r[k] for k in ("id", "name", "style")} for r in EXTRA_RECITERS],
+        # Récitateurs hébergés par l'application elle-même (MP3 dans le frontend).
+        *[{k: r[k] for k in ("id", "name", "style")} for r in local_as_list()],
+    ]
 
 
-def fetch_chapter_audio(surah: int, reciter_id: int) -> dict:
+def fetch_chapter_audio(surah: int, reciter_id) -> dict:
     """URL audio de la sourate complète pour un réciteur donné."""
+    # 1. Récitateur hébergé LOCALEMENT (identifiant texte, ex. « benmoussa »).
+    from apps.quran.local_reciters import chapter_path, get_local_reciter
+
+    local = get_local_reciter(reciter_id)
+    if local is not None:
+        return {"audio_url": chapter_path(local, surah), "timestamps": []}
+
+    # 2. Récitateurs « extra » streamés depuis un CDN externe (ids numériques).
     extra = next((r for r in EXTRA_RECITERS if r["id"] == reciter_id), None)
     if extra:
         return {"audio_url": f"{extra['server']}{surah:03d}.mp3", "timestamps": []}

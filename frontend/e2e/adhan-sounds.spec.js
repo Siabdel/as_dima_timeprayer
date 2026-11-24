@@ -14,13 +14,15 @@ test.describe('Son de l\'Adhan', () => {
     await page.goto('/settings');
     await expect(page.getByRole('heading', { name: "Son de l'Adhan" })).toBeVisible();
 
-    // Les 3 réciteurs du catalogue sont affichés.
+    // Les 3 réciteurs du catalogue sont affichés dans la carte « Son de l'Adhan ».
+    // (exact:true — le nom peut aussi apparaître dans le sélecteur par prière.)
+    const adhanCard = page.locator('.card', { has: page.getByRole('heading', { name: "Son de l'Adhan" }) });
     for (const reciter of [
       'Abdul Basit Abdus Samad',
       'Mishary Rashid Alafasy',
       'Muhammad Siddiq Al-Minshawi',
     ]) {
-      await expect(page.getByText(reciter)).toBeVisible();
+      await expect(adhanCard.getByText(reciter, { exact: true }).first()).toBeVisible();
     }
   });
 
