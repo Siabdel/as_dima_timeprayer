@@ -57,7 +57,14 @@ class GoneSubscriptionError(Exception):
     """L'abonnement est expiré côté navigateur (HTTP 410) : à supprimer."""
 
 
-def build_payload(prayer_name: str, sound_url: str | None = None) -> dict:
+def build_payload(
+    prayer_name: str,
+    sound_url: str | None = None,
+    alert_mode: str = "full",
+    volume: int = 100,
+    fade_in: bool = False,
+    reminder_minutes: int | None = None,
+) -> dict:
     """
     Construit le payload JSON d'une notification Adhan.
 
@@ -67,9 +74,22 @@ def build_payload(prayer_name: str, sound_url: str | None = None) -> dict:
     est affichée (limitation des navigateurs : un SW ne peut pas jouer d'audio).
     """
     label = PRAYER_LABELS.get(prayer_name, prayer_name)
+    if reminder_minutes:
+        body = f"{label} dans {reminder_minutes} minutes."
+        tag = f"prayer-reminder-{prayer_name}"
+    else:
+        body = f"Il est l'heure de la prière du {label}."
+        tag = f"prayer-{prayer_name}"
     return {
         "title": "🕌 Adhan",
-        "body": f"Il est l'heure de la prière du {label}.",
-        "tag": f"prayer-{prayer_name}",
-        "data": {"prayer": prayer_name, "sound_url": sound_url},
+        "body": body,
+        "tag": tag,
+        "data": {
+            "prayer": prayer_name,
+            "sound_url": sound_url,
+            # full = Adhan complet, beep = bip court, vibrate, silent
+            "alert_mode": alert_mode,
+            "volume": volume,
+            "fade_in": fade_in,
+        },
     }

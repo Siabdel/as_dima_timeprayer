@@ -77,6 +77,42 @@ def _next_prayer_due(timings: dict, now_local: datetime) -> str | None:
     return None
 
 
+def _sound_url_for(prefs: UserPreference, prayer_name: str, alert_mode: str) -> str | None:
+    """Adhan complet seulement en mode « full » ; Adhan du Fajr spécifique si choisi."""
+    if alert_mode != "full":
+        return None
+    sound_id = prefs.adhan_sound_id
+    if prayer_name == "fajr" and prefs.fajr_adhan_sound_id:
+        sound_id = prefs.fajr_adhan_sound_id
+    return adhan_sounds.get_sound_url(sound_id)
+
+
+@shared_task
+def send_prayer_reminder(user_id: int, prayer_name: str, minutes: int) -> str:
+    """Rappel « N minutes avant l'Adhan » : notification simple, sans son d'Adhan."""
+    try:
+        prefs = UserPreference.objects.get(user_id=user_id)
+    except UserPreference.DoesNotExist:
+        return "skipped:no-preferences"
+    mode = (prefs.alert_modes or {}).get(prayer_name, "full")
+    if not prefs.is_prayer_enabled(prayer_name) or mode == "silent":
+        return "skipped:preference-disabled"
+    payload = build_payload(
+        prayer_name, alert_mode="vibrate" if mode == "vibrate" else "beep",
+        volume=prefs.adhan_volume, fade_in=False, reminder_minutes=minutes,
+    )
+    sent = 0
+    for subscription in PushSubscription.objects.filter(user_id=user_id):
+        try:
+            send_push(subscription, payload)
+            sent += 1
+        except GoneSubscriptionError:
+            subscription.delete()
+        except PushSendError:
+            continue
+    return f"reminder-sent:{sent}"
+
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)
 def send_prayer_notification(self, user_id: int, prayer_name: str, date_iso: str) -> str:
     """
@@ -108,8 +144,17 @@ def send_prayer_notification(self, user_id: int, prayer_name: str, date_iso: str
         log.save(update_fields=["status"])
         return "skipped:preference-disabled"
 
-    # --- Heures calmes --------------------------------------------------------
-    tz_name = prefs.default_location.timezone if prefs.default_location else "UTC"
+    # --- Mode d'alerte « silencieux » pour cette prière -------------------------
+    alert_mode = (prefs.alert_modes or {}).get(prayer_name, "full")
+    if alert_mode == "silent":
+        log.status = PrayerNotificationLog.STATUS_SKIPPED_DISABLED
+        log.save(update_fields=["status"])
+        return "skipped:alert-silent"
+
+    # --- Heures calmes (dans le fuseau choisi par l'utilisateur, sinon du lieu) -
+    tz_name = prefs.timezone or (
+        prefs.default_location.timezone if prefs.default_location else "UTC"
+    )
     try:
         tz = ZoneInfo(tz_name)
     except Exception:
@@ -128,7 +173,11 @@ def send_prayer_notification(self, user_id: int, prayer_name: str, date_iso: str
         return "skipped:no-subscription"
 
     payload = build_payload(
-        prayer_name, sound_url=adhan_sounds.get_sound_url(prefs.adhan_sound_id)
+        prayer_name,
+        sound_url=_sound_url_for(prefs, prayer_name, alert_mode),
+        alert_mode=alert_mode,
+        volume=prefs.adhan_volume,
+        fade_in=prefs.adhan_fade_in,
     )
     sent, gone = 0, 0
     for subscription in subscriptions:
@@ -186,6 +235,15 @@ def scan_prayer_notifications() -> dict:
             continue
 
         now_local = now_utc.astimezone(tz)
+
+        # Rappel avant l'Adhan : la prière dont l'heure tombe dans N minutes.
+        minutes = prefs.reminder_minutes_before
+        if minutes:
+            upcoming = _next_prayer_due(timings, now_local + timedelta(minutes=minutes))
+            remind_key = f"notif-remind-dedup:{prefs.user_id}:{upcoming}:{date_iso}"
+            if upcoming and cache.add(remind_key, "1", timeout=3600):
+                send_prayer_reminder.delay(prefs.user_id, upcoming, minutes)
+
         prayer = _next_prayer_due(timings, now_local)
         if prayer is None:
             continue

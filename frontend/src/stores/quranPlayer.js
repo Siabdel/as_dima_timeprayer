@@ -193,6 +193,16 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       el.addEventListener('error', () => {
         // Ignore les « erreurs » provoquées par stop() (src vide).
         if (!el.getAttribute('src')) return;
+        // Hôte sans CORS : on retire « crossorigin » et on réessaie une fois
+        // (la lecture prime sur la mise en cache hors ligne).
+        if (el.hasAttribute('crossorigin')) {
+          el.removeAttribute('crossorigin');
+          el.load();
+          el.play().catch(() => {
+            this.playing = false;
+          });
+          return;
+        }
         this.playing = false;
         this.error = 'Lecture audio impossible (réseau ou format).';
       });

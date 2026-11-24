@@ -822,6 +822,17 @@ components:
           type: string
           nullable: true
           description: "Son d'Adhan choisi (identifiant du catalogue /notifications/adhan-sounds/) ; null = son par défaut"
+        timezone_mode: { type: string, enum: [auto, manual], default: auto }
+        timezone: { type: string, description: "Nom IANA (ex. Europe/Paris) ; vide = fuseau du lieu" }
+        language: { type: string, enum: [fr, en], default: fr }
+        alert_modes:
+          type: object
+          description: "Mode d'alerte par prière : full | beep | vibrate | silent (défaut full)"
+          additionalProperties: { type: string, enum: [full, beep, vibrate, silent] }
+        reminder_minutes_before: { type: integer, enum: [0, 5, 10, 15, 30], default: 0 }
+        fajr_adhan_sound_id: { type: string, nullable: true, description: "Adhan spécifique du Fajr (catalogue des sons)" }
+        adhan_volume: { type: integer, minimum: 0, maximum: 100, default: 100 }
+        adhan_fade_in: { type: boolean, default: false }
         default_location:
           nullable: true
           description: Lieu par défaut (FK locations) — objet ou null.

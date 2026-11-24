@@ -45,11 +45,15 @@ function notifyStateChange(playing) {
  * @param {string} url chemin relatif du MP3 (ex. « /adhan/alafasy.mp3 »)
  * @returns {Promise<void>} résolue au démarrage effectif de la lecture
  */
-export function playAdhanSound(url) {
+export function playAdhanSound(url, options = {}) {
   // Arrête et libère la lecture précédente (une seule à la fois).
   stopAdhanSound();
   const audio = new Audio(url);
   audio.preload = 'auto';
+  // Volume propre à l'Adhan (0-100), indépendant du lecteur du Coran.
+  const target = clampVolume(options.volume);
+  audio.volume = options.fadeIn ? 0 : target;
+  if (options.fadeIn) fadeIn(audio, target);
   audio.addEventListener('ended', () => {
     if (currentAudio === audio) {
       currentAudio = null;
@@ -65,6 +69,46 @@ export function playAdhanSound(url) {
   currentAudio = audio;
   notifyStateChange(true);
   return audio.play();
+}
+
+/** Volume 0-100 → 0..1 (défaut 1). */
+function clampVolume(percent) {
+  const n = Number(percent);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(1, Math.max(0, n / 100));
+}
+
+/** Montée progressive du volume (≈ 4 s) jusqu'à la cible. */
+function fadeIn(audio, target, durationMs = 4000) {
+  const steps = 20;
+  let i = 0;
+  const timer = setInterval(() => {
+    i += 1;
+    if (currentAudio !== audio || i >= steps) {
+      clearInterval(timer);
+      if (currentAudio === audio) audio.volume = target;
+      return;
+    }
+    audio.volume = target * (i / steps);
+  }, durationMs / steps);
+}
+
+/** Bip court (Web Audio), pour le mode d'alerte « bip ». */
+export function playBeep(volume = 100) {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = clampVolume(volume) * 0.4;
+    osc.frequency.value = 880;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+    osc.onended = () => ctx.close();
+  } catch {
+    /* audio indisponible : la notification reste visible */
+  }
 }
 
 /** Arrête la lecture courante (idempotent). */
@@ -92,10 +136,18 @@ export function initAdhanPushListener() {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
   navigator.serviceWorker.addEventListener('message', (event) => {
     const data = event.data;
-    if (!data || data.type !== 'PLAY_ADHAN' || !data.soundUrl) return;
+    if (!data || data.type !== 'PLAY_ADHAN') return;
+    if (data.alertMode === 'beep') {
+      playBeep(data.volume);
+      return;
+    }
+    if (!data.soundUrl) return;
     // Lecture en aval de l'interaction utilisateur : certaines policies
     // autorisent la lecture car la notification a été affichée par le SW.
-    playAdhanSound(data.soundUrl).catch(() => {
+    playAdhanSound(data.soundUrl, {
+      volume: data.volume,
+      fadeIn: data.fadeIn === true,
+    }).catch(() => {
       /* autoplay refusé : la notification est visible sans son */
     });
   });

@@ -12,6 +12,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getSurahs, getVerses } from '../api/quran';
 import { useQuranPlayerStore } from '../stores/quranPlayer';
+import { usePreferencesStore } from '../stores/preferences';
 import VerseList from '../components/VerseList.vue';
 
 const route = useRoute();
@@ -50,7 +51,10 @@ const translationsOptions = [
   { code: 'fr', label: 'Français (FR)' },
   { code: 'en', label: 'Anglais (EN)' },
 ];
-const selectedTranslations = ref(['fr']); // FR cochée par défaut
+// Traduction par défaut : langue choisie dans les Réglages (FR sinon).
+const selectedTranslations = ref([
+  usePreferencesStore().preference?.language === 'en' ? 'en' : 'fr',
+]);
 
 const verses = ref([]);
 const isLoading = ref(false);

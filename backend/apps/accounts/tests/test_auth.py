@@ -120,3 +120,35 @@ class TestPreferences:
     def test_preferences_requires_auth(self, api_client):
         resp = api_client.get(PREFS_URL)
         assert resp.status_code == 401
+
+
+class TestSettingsPreferences:
+    URL = "/api/v1/auth/preferences/"
+
+    def _auth(self, api_client, django_user_model):
+        user = django_user_model.objects.create_user(email="s@example.com", password="Passw0rd!xyz")
+        api_client.force_authenticate(user)
+        return user
+
+    def test_new_fields_roundtrip(self, api_client, django_user_model):
+        self._auth(api_client, django_user_model)
+        resp = api_client.put(self.URL, {
+            "timezone_mode": "manual", "timezone": "Africa/Casablanca", "language": "en",
+            "alert_modes": {"fajr": "vibrate", "isha": "silent"},
+            "reminder_minutes_before": 10, "fajr_adhan_sound_id": "alafasy",
+            "adhan_volume": 60, "adhan_fade_in": True,
+        }, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["timezone"] == "Africa/Casablanca"
+        assert resp.data["alert_modes"]["isha"] == "silent"
+
+    def test_invalid_values_rejected(self, api_client, django_user_model):
+        self._auth(api_client, django_user_model)
+        for bad in (
+            {"timezone": "Mars/Olympus"},
+            {"alert_modes": {"fajr": "loud"}},
+            {"reminder_minutes_before": 7},
+            {"fajr_adhan_sound_id": "nope"},
+            {"adhan_volume": 150},
+        ):
+            assert api_client.put(self.URL, bad, format="json").status_code == 400, bad

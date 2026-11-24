@@ -16,6 +16,7 @@ import { usePrayerTimesStore } from '../stores/prayerTimes';
 import { useAuthStore } from '../stores/auth';
 import { usePreferencesStore } from '../stores/preferences';
 import { formatHijri } from '../utils/time';
+import { CALC_METHODS } from '../utils/calcMethods';
 import PrayerTimesCard from '../components/PrayerTimesCard.vue';
 import CountdownTimer from '../components/CountdownTimer.vue';
 
@@ -40,16 +41,7 @@ const geoError = ref(null);
 const showCityForm = ref(false);
 
 // Méthodes de calcul proposées (contrat API : entier 0-30, défaut 3).
-const METHODS = [
-  { value: 3, label: 'Muslim World League (Ligue musulmane mondiale)' },
-  { value: 2, label: 'ISNA (Amérique du Nord)' },
-  { value: 5, label: 'Egyptian General Authority (Égypte)' },
-  { value: 4, label: 'Umm al-Qura (Makkah)' },
-  { value: 1, label: 'University of Islamic Sciences, Karachi' },
-  { value: 0, label: 'Shia Ithna-Ashari' },
-  { value: 14, label: 'Morocco (Maroc)' },
-  { value: 21, label: 'Russia (Russie)' },
-];
+const METHODS = CALC_METHODS;
 
 // ---------------------------------------------------------------------------
 // Propriétés calculées

@@ -19,6 +19,10 @@ import {
   precacheAndRoute,
 } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { CacheFirst } from 'workbox-strategies';
+import { RangeRequestsPlugin } from 'workbox-range-requests';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 // --- Pré-cache de la coquille applicative (généré par vite-plugin-pwa) -----
 precacheAndRoute(self.__WB_MANIFEST);
@@ -26,6 +30,21 @@ cleanupOutdatedCaches();
 
 // Application monopage : toute navigation bascule sur index.html pré-caché.
 registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+
+// Audio du Coran : cache d'exécution (écoute hors ligne + économie de données).
+// Les requêtes « Range » (lecture/seek) sont servies depuis le cache ; la page
+// Réglages permet de le vider (cache « pc-audio-v1 »).
+registerRoute(
+  ({ request }) => request.destination === 'audio',
+  new CacheFirst({
+    cacheName: 'pc-audio-v1',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new RangeRequestsPlugin(),
+      new ExpirationPlugin({ maxEntries: 40, purgeOnQuotaError: true }),
+    ],
+  })
+);
 
 // Prend le contrôle de toutes les fenêtres dès l'activation (autoUpdate).
 clientsClaim();
@@ -43,7 +62,10 @@ self.addEventListener('push', (event) => {
   }
 
   const soundUrl = payload.data?.sound_url ?? null;
+  const alertMode = payload.data?.alert_mode ?? 'full';
   const options = {
+    // Vibreur : motif long pour « vibrate », court sinon ; rien si bip/son seuls.
+    vibrate: alertMode === 'vibrate' ? [400, 150, 400, 150, 400] : undefined,
     body: payload.body || '',
     tag: payload.tag || 'prayer',
     icon: '/icons/icon-192.png',
@@ -56,13 +78,19 @@ self.addEventListener('push', (event) => {
       await self.registration.showNotification(payload.title || '🕌 Adhan', options);
 
       // Lecture du son : une fenêtre ouverte de l'app est nécessaire.
-      if (!soundUrl) return;
+      if (!soundUrl && alertMode !== 'beep') return;
       const windows = await self.clients.matchAll({
         type: 'window',
         includeUncontrolled: true,
       });
       for (const win of windows) {
-        win.postMessage({ type: 'PLAY_ADHAN', soundUrl });
+        win.postMessage({
+          type: 'PLAY_ADHAN',
+          soundUrl,
+          alertMode,
+          volume: payload.data?.volume ?? 100,
+          fadeIn: payload.data?.fade_in === true,
+        });
         break; // une seule fenêtre joue le son
       }
     })()

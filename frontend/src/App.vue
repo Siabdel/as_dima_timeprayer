@@ -126,6 +126,6 @@ onMounted(() => {
 
     <!-- Élément <audio> UNIQUE de l'application : invisible, rendu au niveau
          racine (jamais démonté en naviguant), piloté par le store. -->
-    <audio ref="audioEl" preload="metadata" class="d-none"></audio>
+    <audio ref="audioEl" preload="metadata" crossorigin="anonymous" class="d-none"></audio>
   </div>
 </template>

@@ -19,6 +19,7 @@ import { useAuthStore } from '../stores/auth';
 import { usePreferencesStore } from '../stores/preferences';
 import { getSubscriptionStatus } from '../api/tools';
 import { getAdhanSounds } from '../api/adhanSounds';
+import SettingsPreferencesPanel from '../components/SettingsPreferencesPanel.vue';
 import {
   isPushSupported,
   requestPermissionAndSubscribe,
@@ -556,7 +557,10 @@ function handleLogout() {
         </div>
       </div>
 
-      <!-- ===================== Notifications push ===================== -->
+      <!-- Ma position, alertes avancées, audio & récitation -->
+      <SettingsPreferencesPanel v-if="auth.isAuthenticated" />
+
+      <!-- ===================== Notifications push ====================== -->
       <div class="card shadow-sm mb-4">
         <div class="card-body p-4">
           <div class="d-flex justify-content-between align-items-start gap-2 mb-3">

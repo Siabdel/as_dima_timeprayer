@@ -102,6 +102,37 @@ class UserPreference(models.Model):
         help_text=_("Identifiant du son d'Adhan choisi (voir le catalogue des sons)."),
     )
 
+    # --- Ma position : fuseau horaire et langue --------------------------------
+    TIMEZONE_MODE_CHOICES = [("auto", "Automatique (appareil)"), ("manual", "Manuel")]
+    LANGUAGE_CHOICES = [("fr", "Français"), ("en", "English")]
+
+    timezone_mode = models.CharField(
+        _("mode du fuseau horaire"), max_length=8,
+        choices=TIMEZONE_MODE_CHOICES, default="auto",
+    )
+    timezone = models.CharField(
+        _("fuseau horaire"), max_length=64, blank=True, default="",
+        help_text=_("Nom IANA (ex. Europe/Paris, Africa/Casablanca)."),
+    )
+    language = models.CharField(
+        _("langue"), max_length=2, choices=LANGUAGE_CHOICES, default="fr"
+    )
+
+    # --- Alertes et Adhan avancés ------------------------------------------------
+    # {prière: full | beep | vibrate | silent} ; absent = « full ».
+    alert_modes = models.JSONField(_("mode d'alerte par prière"), default=dict, blank=True)
+    reminder_minutes_before = models.PositiveSmallIntegerField(
+        _("rappel avant l'Adhan (minutes)"), default=0
+    )
+    fajr_adhan_sound_id = models.CharField(
+        _("Adhan spécifique du Fajr"), max_length=32, null=True, blank=True
+    )
+    adhan_volume = models.PositiveSmallIntegerField(
+        _("volume de l'Adhan (%)"), default=100,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    adhan_fade_in = models.BooleanField(_("montée progressive du son"), default=False)
+
     # Lieu par défaut utilisé par /prayer-times/today/
     default_location = models.ForeignKey(
         "locations.Location",
