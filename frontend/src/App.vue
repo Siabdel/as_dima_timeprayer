@@ -77,8 +77,8 @@ onMounted(() => {
             <li class="nav-item">
               <router-link class="nav-link" to="/library">Douâa &amp; Hadiths</router-link>
             </li>
-            <!-- Réglages : visible uniquement si connecté -->
-            <li v-if="isAuthenticated" class="nav-item">
+            <!-- Réglages : toujours visible (redirige vers la connexion si besoin) -->
+            <li class="nav-item">
               <router-link class="nav-link" to="/settings">Réglages</router-link>
             </li>
           </ul>
