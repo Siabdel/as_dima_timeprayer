@@ -35,3 +35,20 @@ test.describe('Calendrier des fêtes', () => {
     await expect(yearSection.getByText(/Isra & Mi'raj/)).toHaveCount(0);
   });
 });
+
+test.describe('Calendrier : onglet France', () => {
+  test('deux onglets, jours fériés français avec fêtes mobiles', async ({ page }) => {
+    await page.goto('/calendar');
+    await expect(page.getByRole('tab', { name: 'Calendrier islamique et fêtes marocaines' })).toHaveAttribute('aria-selected', 'true');
+
+    await page.getByRole('tab', { name: 'Calendrier grégorien, France' }).click();
+    await expect(page.getByRole('heading', { name: /Jours fériés \d{4} — France/ })).toBeVisible();
+    for (const name of ['Lundi de Pâques', 'Ascension', 'Lundi de Pentecôte', 'Fête nationale']) {
+      await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+    }
+
+    // Retour au premier onglet.
+    await page.getByRole('tab', { name: /islamique/ }).click();
+    await expect(page.getByText(/prochaines f[eê]tes/i)).toBeVisible();
+  });
+});

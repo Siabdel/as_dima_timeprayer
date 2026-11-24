@@ -32,6 +32,7 @@ outils (Qibla, tasbih) et bibliothèque.
     volume, fade-in, rappel avant l'Adhan.
   - *Audio* : récitateur par défaut avec aperçu, cache audio hors ligne vidable.
   - Notifications push, son de l'Adhan, profil.
+- **Calendrier des fêtes** en deux onglets : *islamique et fêtes marocaines* (par année) et *grégorien, France* (jours fériés, dont fêtes mobiles calculées depuis Pâques, grille des 12 mois ; `GET /api/v1/events/france/`).
 - Calendrier hégirien et fêtes, outils (Qibla, tasbih), bibliothèque.
 
 ## Récitateurs hébergés localement

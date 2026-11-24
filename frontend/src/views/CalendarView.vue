@@ -13,6 +13,14 @@
 // ===========================================================================
 import { ref, computed, onMounted, watch } from 'vue';
 import { getYearEvents, getUpcomingEvents } from '../api/events';
+import FranceCalendar from '../components/FranceCalendar.vue';
+
+// Onglets : « islamic » (fêtes islamiques + fêtes marocaines) | « france » (grégorien).
+const TABS = [
+  { key: 'islamic', label: 'Calendrier islamique et fêtes marocaines' },
+  { key: 'france', label: 'Calendrier grégorien, France' },
+];
+const tab = ref('islamic');
 
 // ---------------------------------------------------------------------------
 // État local de la vue
@@ -176,9 +184,26 @@ const groupedByMonth = computed(() => {
   <div class="row justify-content-center">
     <div class="col-12 col-lg-10 col-xl-9">
       <h1 class="h4 mb-1">Calendrier des fêtes</h1>
-      <p class="text-muted mb-4">
-        Fêtes islamiques et jours fériés nationaux (Maroc), par année.
+      <p class="text-muted mb-3">
+        {{ tab === 'islamic'
+          ? 'Fêtes islamiques et jours fériés nationaux (Maroc), par année.'
+          : 'Calendrier grégorien et jours fériés en France, par année.' }}
       </p>
+
+      <ul class="nav nav-tabs mb-4 pc-cal-tabs" role="tablist" aria-label="Type de calendrier">
+        <li v-for="t in TABS" :key="t.key" class="nav-item" role="presentation">
+          <button :id="`cal-tab-${t.key}`" type="button" class="nav-link" :class="{ active: tab === t.key }"
+                  role="tab" :aria-selected="tab === t.key" :aria-controls="`cal-panel-${t.key}`"
+                  @click="tab = t.key">
+            {{ t.label }}
+          </button>
+        </li>
+      </ul>
+
+      <FranceCalendar v-if="tab === 'france'" id="cal-panel-france" role="tabpanel"
+                      aria-labelledby="cal-tab-france" :initial-year="selectedYear" />
+
+      <div v-show="tab === 'islamic'" id="cal-panel-islamic" role="tabpanel" aria-labelledby="cal-tab-islamic">
 
       <!-- ===================== En-tête : année + badge hégirien ===================== -->
       <div class="card shadow-sm mb-4">
@@ -358,11 +383,15 @@ const groupedByMonth = computed(() => {
           </div>
         </section>
       </template>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.pc-cal-tabs .nav-link { color: #3f4b4a; }
+.pc-cal-tabs .nav-link.active { color: var(--pc-green); font-weight: 600; border-bottom-color: #fff; }
+
 /* Spinner de chargement aux couleurs de la marque */
 .pc-spinner {
   width: 2.5rem;

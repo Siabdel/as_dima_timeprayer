@@ -3,6 +3,7 @@ Vues de l'app events :
 - GET /api/v1/events/            → fêtes d'une année grégorienne (public)
 - GET /api/v1/events/upcoming/   → prochaines fêtes à partir d'aujourd'hui (public)
 - GET /api/v1/events/hijri-year/ → fêtes islamiques d'une année hégirienne (public)
+- GET /api/v1/events/france/     → jours fériés en France d'une année grégorienne (public)
 """
 from datetime import date
 
@@ -10,7 +11,7 @@ from rest_framework import permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import services
+from . import france, services
 
 
 class HijriDateSerializer(serializers.Serializer):
@@ -88,6 +89,32 @@ class UpcomingEventsView(APIView):
                 "events": EventSerializer(events, many=True).data,
             }
         )
+
+
+class FranceHolidaysView(APIView):
+    """Jours fériés en France pour une année grégorienne (défaut : année courante)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        try:
+            year = int(request.query_params.get("year", date.today().year))
+        except (TypeError, ValueError):
+            year = date.today().year
+        if not 1583 <= year <= 2100:
+            return Response(
+                {"error": {"code": "invalid_params",
+                           "message": "L'année doit être comprise entre 1583 et 2100."}},
+                status=400,
+            )
+        holidays = france.french_holidays(year)
+        return Response({
+            "year": year,
+            "count": len(holidays),
+            "holidays": [
+                {**h, "date": h["date"].isoformat()} for h in holidays
+            ],
+        })
 
 
 class HijriYearEventsView(APIView):

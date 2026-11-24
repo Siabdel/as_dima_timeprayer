@@ -31,3 +31,12 @@ export function getUpcomingEvents(limit = 12) {
 export function getHijriYearEvents(year) {
   return client.get('/events/hijri-year/', { params: { year } });
 }
+
+/**
+ * GET /events/france/?year=YYYY — jours fériés en France d'une année.
+ * @param {number|string} year Année grégorienne
+ * @returns {Promise<Object>} { year, count, holidays: [{ id, name, date, description, regional }] }
+ */
+export function getFranceHolidays(year) {
+  return client.get('/events/france/', { params: { year } });
+}

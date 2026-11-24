@@ -91,3 +91,28 @@ class TestEventsEndpoint:
         resp = api_client.get("/api/v1/events/hijri-year/")
         assert resp.status_code == 200
         assert 1400 <= resp.data["hijri_year"] <= 1500
+
+
+class TestFranceHolidays:
+    def test_easter_dates(self):
+        from datetime import date
+
+        from apps.events.france import easter_sunday
+
+        assert easter_sunday(2025) == date(2025, 4, 20)
+        assert easter_sunday(2026) == date(2026, 4, 5)
+        assert easter_sunday(2027) == date(2027, 3, 28)
+
+    def test_endpoint_2026_movable_feasts(self, api_client):
+        resp = api_client.get("/api/v1/events/france/", {"year": 2026})
+        assert resp.status_code == 200
+        by_id = {h["id"]: h["date"] for h in resp.data["holidays"]}
+        assert by_id["fr-easter-monday"] == "2026-04-06"
+        assert by_id["fr-ascension"] == "2026-05-14"
+        assert by_id["fr-whit-monday"] == "2026-05-25"
+        assert by_id["fr-national-day"] == "2026-07-14"
+        dates = [h["date"] for h in resp.data["holidays"]]
+        assert dates == sorted(dates)
+
+    def test_invalid_year(self, api_client):
+        assert api_client.get("/api/v1/events/france/", {"year": 1200}).status_code == 400
