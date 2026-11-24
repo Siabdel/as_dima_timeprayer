@@ -29,6 +29,7 @@ Dernière mise à jour : 2026-11-24. Branche `main`.
 - Correction : Maroc = méthode **21**, Russie = **14** (étaient inversés dans `PrayerTimesView`).
 
 ## Lancer / tester
+- Docker dev : le service `backend` lance `migrate` au démarrage.
 - Backend : pas de venv dans le dépôt. Exemple : `python3 -m venv /tmp/venv && /tmp/venv/bin/pip install -r backend/requirements/dev.txt`,
   puis `cd backend && SECRET_KEY=test /tmp/venv/bin/python -m pytest -q` (134 tests verts au dernier passage).
 - Frontend : `cd frontend && npx vite build` (OK). Les E2E Playwright n'ont **pas** été lancés.
