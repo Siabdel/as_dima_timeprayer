@@ -14,5 +14,6 @@ api_urlpatterns = [
     path("quran/", include("apps.quran.urls")),
     path("events/", include("apps.events.urls")),
     path("library/", include("apps.library.urls")),
+    path("weather/", include("apps.weather.urls")),
     path("", include("apps.tools.urls")),
 ]

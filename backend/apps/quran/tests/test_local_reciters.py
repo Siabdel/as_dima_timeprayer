@@ -19,6 +19,13 @@ class TestLocalReciterCatalog:
         assert reciter.name == "Cheikh Abderrahmane Benmoussa"
         assert reciter.slug == "benmoussa"
 
+    def test_hssain_registered(self):
+        reciter = local_reciters.get_local_reciter("hssain")
+        assert reciter is not None
+        assert reciter.name == "Cheikh Abdelhamid Hssain"
+        assert reciter.slug == "hssain"
+        assert reciter.riwaya == "Warsh"
+
     def test_unknown_returns_none(self):
         assert local_reciters.get_local_reciter("inconnu") is None
         assert local_reciters.get_local_reciter(None) is None
@@ -72,3 +79,14 @@ class TestChapterAudioLocal:
         assert resp.status_code in (400, 503)
         if resp.status_code == 400:
             assert "reciter_id inconnu" not in resp.data["error"]["message"]
+
+class TestChapterAudioHssain:
+    def test_hssain_chapter_audio(self, api_client):
+        resp = api_client.get("/api/v1/quran/audio/chapter/2/", {"reciter_id": "hssain"})
+        assert resp.status_code == 200, resp.data
+        assert resp.data["audio_url"] == "/quran/hssain/002.mp3"
+
+    def test_hssain_last_surah(self, api_client):
+        resp = api_client.get("/api/v1/quran/audio/chapter/114/", {"reciter_id": "hssain"})
+        assert resp.status_code == 200
+        assert resp.data["audio_url"] == "/quran/hssain/114.mp3"

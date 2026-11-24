@@ -32,6 +32,13 @@ LOCAL_RECITERS: list[LocalReciter] = [
         riwaya="Hafs",
         source="archive.org — AbdulrahmanBenmoussa (64 kbps)",
     ),
+    LocalReciter(
+        id="hssain",
+        name="Cheikh Abdelhamid Hssain",
+        slug="hssain",
+        riwaya="Warsh",
+        source="archive.org — abdelhamed-hssain-warsh",
+    ),
 ]
 
 # Récitateurs locaux indexés par identifiant (lookup O(1)).

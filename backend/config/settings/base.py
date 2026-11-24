@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.tools",
     "apps.events",
     "apps.library",
+    "apps.weather",
 ]
 
 MIDDLEWARE = [

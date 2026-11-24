@@ -23,6 +23,10 @@
 - [ ] Adhan joué seulement app ouverte (limite navigateur) ; envisager l'app Android (TWA, voir DEPLOYMENT.md partie B) pour un son natif.
 - [ ] Fuseau choisi : utilisé pour les heures calmes seulement ; le calcul des horaires suit le fuseau du lieu.
 
+## Météo
+- [ ] Libellé du temps pour les jours suivants (l'API n'expose que celui du moment présent).
+- [ ] Icônes jour/nuit ; alertes météo.
+
 ## Déploiement
 - [ ] Déploiement VPS Hostinger (DEPLOYMENT.md partie A).
 - [ ] Publication Play Store via TWA (partie B).

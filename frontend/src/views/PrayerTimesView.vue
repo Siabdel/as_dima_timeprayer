@@ -19,6 +19,7 @@ import { formatHijri } from '../utils/time';
 import { CALC_METHODS } from '../utils/calcMethods';
 import PrayerTimesCard from '../components/PrayerTimesCard.vue';
 import CountdownTimer from '../components/CountdownTimer.vue';
+import WeatherCard from '../components/WeatherCard.vue';
 
 const prayerStore = usePrayerTimesStore();
 const authStore = useAuthStore();
@@ -418,6 +419,9 @@ onMounted(async () => {
 
           <h2 class="h5 mt-4 mb-3">Horaires du jour</h2>
           <PrayerTimesCard :timings="prayerStore.data" :next-prayer="nextPrayerKey" />
+
+          <!-- Météo de la ville, sous les horaires -->
+          <WeatherCard :location="prayerStore.location" />
         </template>
       </div>
     </div>

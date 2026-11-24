@@ -10,18 +10,20 @@ outils (Qibla, tasbih) et bibliothèque.
 |---|---|
 | Backend | Django + Django REST Framework, Celery (worker + beat), PostgreSQL, Redis |
 | Frontend | Vue 3, Pinia, Vue Router, Bootstrap 5, Vite, PWA (service worker Workbox) |
-| Sources externes | Aladhan (horaires), Quran.com API v4 (texte, audio, mots, horodatages) |
+| Sources externes | Aladhan (horaires), Quran.com API v4 (texte, audio, mots, horodatages), Open-Meteo (météo) |
 | Déploiement | Docker Compose, Caddy (HTTPS) — voir [DEPLOYMENT.md](DEPLOYMENT.md) |
 
 ## Fonctionnalités
 
 - **Horaires de prière** par ville ou coordonnées, compte à rebours, méthodes de calcul par organisme.
+- **Météo** de la ville sous les horaires (Open-Meteo via `GET /api/v1/weather/`, cache 15 min) : température °C/°F, précipitations, humidité, vent, courbe 24 h, prévisions 8 jours.
 - **Coran** : 114 sourates, traductions FR/EN, audio par sourate ou verset, plusieurs récitateurs.
   - *Lecture mot à mot* : séquence de mots isolés avec traduction.
   - *Suivi de la récitation* : pendant l'écoute d'une sourate, le **verset** (ou le **mot**)
     récité est surligné et la page défile automatiquement (horodatages Quran.com).
-  - *Récitateurs hébergés localement* : **Cheikh Abderrahmane Benmoussa** (114 sourates,
-    MP3 servis par l'application — voir ci-dessous).
+  - *Récitateurs hébergés localement* : **Cheikh Abderrahmane Benmoussa** et
+    **Cheikh Abdelhamid Hssain** (114 sourates chacun, MP3 servis par
+    l'application — voir ci-dessous).
 - **Réglages** (compte connecté) :
   - *Ma position* : fuseau horaire auto/manuel (IANA), méthode de calcul par pays, langue.
   - *Alertes & Adhan* : mode par prière (sonnerie, bip, vibreur, silencieux), Adhan du Fajr,
@@ -39,6 +41,7 @@ pour garantir la disponibilité et éviter toute dépendance externe.
 | Récitateur | Riwaya | Sourates | Taille | Source |
 |---|---|---|---|---|
 | **Cheikh Abderrahmane Benmoussa** | Hafs | 114 (001.mp3 … 114.mp3) | 833 Mo (64 kbps) | archive.org `AbdulrahmanBenmoussa` |
+| **Cheikh Abdelhamid Hssain** | Warsh | 114 (001.mp3 … 114.mp3) | 516 Mo | archive.org `abdelhamed-hssain-warsh` |
 
 **Intégration** : catalogue [`local_reciters.py`](backend/apps/quran/local_reciters.py),
 exposé par `GET /quran/reciters/` (avec `local: true`). `GET /quran/audio/chapter/{n}/?reciter_id=benmoussa`
