@@ -1,6 +1,6 @@
 # Notes d'exploitation — Prière & Coran (Salawat)
 
-Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : Ramadan, rappels, 8 Adhan).
+Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : menu responsive, Ramadan, rappels, 8 Adhan).
 
 ## Sauvegardes (VPS salawat.dimatlas.com)
 
@@ -28,6 +28,9 @@ Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : Ramad
 ## Accès SSH et déploiement
 - Procédure : clé temporaire `claude-deploy-salawat` ajoutée puis retirée à chaque déploiement (DEPLOY.md §10).
 - La clé `claude-deploy-dimatlas-vps` est **toujours autorisée** sur la VPS (root) : elle ne vient pas de cette session ; à retirer si elle ne sert plus.
+
+## Menu principal
+- 7 liens (Horaires, Coran, Outils, Calendrier, Ramadan, Douâa & Hadiths, Réglages) : la barre ne tenait plus sur une ligne en dessous de ~1200 px et « Douâa & Hadiths » était coupé. Corrigé le 2026-11-25 (`navbar-expand-xl` : burger sous 1200 px). Si un lien est ajouté, revérifier la largeur.
 
 ## Tests
 - Les e2e du Ramadan (onglet, menu) et de l'Adhan passent en local ; test « méthode/madhhab » corrigé (le stockage n'est plus vidé à chaque navigation). Penser à `migrate` sur la base locale après chaque nouvelle migration, sinon les réglages restent en chargement.

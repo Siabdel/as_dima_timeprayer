@@ -36,6 +36,9 @@
 - [ ] Tester les rappels Imsak/rupture sur un vrai téléphone (premier Ramadan : 8 février 2027). Dates dépendantes de l'observation de la lune (±1 jour).
 - [ ] Option : impression/partage du tableau de Ramadan.
 
+- [x] Menu : lien « Douâa & Hadiths » coupé sur écran moyen → burger sous 1200 px, déployé 2026-11-25.
+- [ ] Vérifier le menu (burger et ligne unique) sur un vrai téléphone/tablette.
+
 ## Météo
 - [ ] Libellé du temps pour les jours suivants (l'API n'expose que celui du moment présent).
 - [ ] Icônes jour/nuit ; alertes météo.
