@@ -36,5 +36,7 @@ EXPOSE 8000
 FROM base AS prod
 RUN pip install --no-cache-dir -r requirements/prod.txt
 COPY --chown=app:app . .
+# Dossier des fichiers statiques (volume nommé : hérite de ce propriétaire)
+RUN mkdir -p /app/staticfiles && chown app:app /app/staticfiles
 USER app
 EXPOSE 8000
