@@ -24,6 +24,10 @@
 - [ ] Adhan joué seulement app ouverte (limite navigateur) ; envisager l'app Android (TWA, voir DEPLOYMENT.md partie B) pour un son natif.
 - [ ] Fuseau choisi : utilisé pour les heures calmes seulement ; le calcul des horaires suit le fuseau du lieu.
 
+## Récitateurs / API
+- [ ] Quran Foundation : adapter l'authentification (hôte `oauth2.quran.foundation`, en-têtes `x-auth-token` / `x-client-id`) avant d'y renseigner des identifiants.
+- [ ] Hssain : déployer ses MP3 puis l'ajouter à `LOCAL_RECITERS_IDS` (non exposé en production pour l'instant).
+
 ## Météo
 - [ ] Libellé du temps pour les jours suivants (l'API n'expose que celui du moment présent).
 - [ ] Icônes jour/nuit ; alertes météo.
