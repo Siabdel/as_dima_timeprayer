@@ -16,7 +16,7 @@ donner un lien à vos amis pour qu'ils l'**installent comme une application**
 5. [Vérifier avant de partager](#5-vérifier-avant-de-partager)
 6. [Partager le lien](#6-partager-le-lien)
 7. [Installation sur le téléphone des amis](#7-installation-sur-le-téléphone-des-amis)
-8. [Notifications d'Adhan](#8-notifications-dadhan)
+8. [Notifications d'Adhan](#8-notifications-dadhan) — dont le guide à transmettre aux amis
 9. [Publier une mise à jour](#9-publier-une-mise-à-jour)
 10. [Limites et points d'attention](#10-limites-et-points-dattention)
 11. [Dépannage](#11-dépannage)
@@ -210,8 +210,44 @@ Icône « Installer » dans la barre d'adresse.
 
 ## 8. Notifications d'Adhan
 
-- Chaque ami doit **créer son compte** (e-mail + mot de passe), choisir son lieu,
-  puis activer les notifications dans **Réglages → Notifications push**.
+### 8.1 Guide pour vos amis (à leur transmettre)
+
+**1. Compte et lieu**
+1. Ouvrir le site et **créer un compte** (les notifications sont liées au compte).
+2. **Réglages → Ma position** : choisir sa ville. **Réglages → Calcul des horaires** : choisir la méthode.
+3. Ouvrir l'onglet **Horaires** au moins une fois par jour : le serveur n'envoie les rappels
+   que pour les horaires déjà chargés (limite connue, voir [§10](#10-limites-et-points-dattention)).
+
+**2. Installer l'application (conseillé)**
+- **Android (Chrome)** : menu ⋮ → « Installer l'application ».
+- **iPhone** : les notifications exigent l'app installée — Safari → Partager → « Sur l'écran
+  d'accueil », puis l'ouvrir depuis l'icône (iOS 16.4 ou plus).
+
+**3. Activer les notifications**
+1. **Réglages → Notifications push → « Activer les notifications »**, puis **Autoriser**.
+2. Choisir une prière et appuyer sur **« Envoyer une notification de test »** pour vérifier.
+
+**4. Choisir le type d'alerte par prière**
+**Réglages → Alertes et Adhan avancé** : pour chaque prière (Fajr, Dhuhr, Asr, Maghrib, Isha) :
+
+| Mode | Effet |
+|---|---|
+| Sonnerie complète | Adhan |
+| Bip court | bip |
+| Vibreur | vibration |
+| Silencieux | aucune notification pour cette prière |
+
+On y règle aussi le volume, la montée progressive du son, l'Adhan spécial du Fajr et le
+**rappel avant l'heure** (5, 10, 15 ou 30 minutes). Pendant le mois de Ramadan, la section
+**« Rappels de Ramadan »** ajoute les rappels de l'**Imsak** et de la **rupture du jeûne**
+(désactivés par défaut ; ils ignorent les heures calmes).
+
+**Si rien n'arrive** : vérifier que les notifications du navigateur / de l'app sont autorisées
+dans les réglages du téléphone, que le mode « Ne pas déranger » est désactivé et, sur Android,
+désactiver l'optimisation de batterie pour l'application.
+
+### 8.2 Côté serveur
+
 - Les rappels sont envoyés par le serveur (services `worker` et `beat`) : ils
   arrivent même app fermée. Vérifiez qu'ils tournent :
 
@@ -221,10 +257,11 @@ Icône « Installer » dans la barre d'adresse.
   ```
 
 - Le **son de l'Adhan** ne se joue que si l'application est ouverte
-  (limitation des navigateurs) ; app fermée, l'ami reçoit la notification, avec
-  vibration selon le mode choisi.
-- Sur Android, demandez de **désactiver l'optimisation de batterie** pour
-  l'application si les notifications arrivent en retard.
+  (limitation des navigateurs) ; app fermée, l'ami reçoit seulement la notification,
+  avec vibration selon le mode choisi.
+- **Aucun fichier d'Adhan n'est encore fourni** : « Sonnerie complète » ne joue donc pas
+  de son tant qu'un Adhan n'est pas ajouté (voir `TODO.md`).
+- Non testé sur un vrai téléphone à ce jour.
 
 ## 9. Publier une mise à jour
 
