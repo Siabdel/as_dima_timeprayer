@@ -97,6 +97,11 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Choisissez 0, 5, 10, 15 ou 30 minutes.")
         return value
 
+    def validate_ramadan_reminder_minutes(self, value: int) -> int:
+        if value not in self.REMINDER_CHOICES:
+            raise serializers.ValidationError("Choisissez 0, 5, 10, 15 ou 30 minutes.")
+        return value
+
     class Meta:
         model = UserPreference
         fields = [
@@ -118,6 +123,9 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
             "language",
             "alert_modes",
             "reminder_minutes_before",
+            "ramadan_imsak_reminder",
+            "ramadan_iftar_reminder",
+            "ramadan_reminder_minutes",
             "fajr_adhan_sound_id",
             "adhan_volume",
             "adhan_fade_in",

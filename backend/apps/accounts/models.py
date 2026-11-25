@@ -124,6 +124,12 @@ class UserPreference(models.Model):
     reminder_minutes_before = models.PositiveSmallIntegerField(
         _("rappel avant l'Adhan (minutes)"), default=0
     )
+    # Rappels du mois de Ramadan (actifs seulement pendant Ramadan).
+    ramadan_imsak_reminder = models.BooleanField(_("rappel de l'Imsak (Ramadan)"), default=False)
+    ramadan_iftar_reminder = models.BooleanField(_("rappel de la rupture du jeûne (Ramadan)"), default=False)
+    ramadan_reminder_minutes = models.PositiveSmallIntegerField(
+        _("rappel Ramadan avant l'heure (minutes)"), default=10
+    )
     fajr_adhan_sound_id = models.CharField(
         _("Adhan spécifique du Fajr"), max_length=32, null=True, blank=True
     )

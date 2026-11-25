@@ -52,6 +52,7 @@ def _normalize_payload(data: dict) -> dict:
     timings = data.get("timings") or {}
     return {
         "fajr": _clean_timing(timings.get("Fajr", "")),
+        "imsak": _clean_timing(timings.get("Imsak", "")),
         "sunrise": _clean_timing(timings.get("Sunrise", "")),
         "dhuhr": _clean_timing(timings.get("Dhuhr", "")),
         "asr": _clean_timing(timings.get("Asr", "")),

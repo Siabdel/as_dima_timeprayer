@@ -7,6 +7,7 @@ import QuranView from '../views/QuranView.vue';
 import SurahView from '../views/SurahView.vue';
 import ToolsView from '../views/ToolsView.vue';
 import CalendarView from '../views/CalendarView.vue';
+import RamadanView from '../views/RamadanView.vue';
 import LibraryView from '../views/LibraryView.vue';
 import SettingsView from '../views/SettingsView.vue';
 import LoginView from '../views/LoginView.vue';
@@ -20,6 +21,8 @@ const routes = [
   { path: '/tools', name: 'tools', component: ToolsView },
   // Calendrier des fêtes islamiques et marocaines (public)
   { path: '/calendar', name: 'calendar', component: CalendarView },
+  // Ramadan : horaires jour par jour, Imsak, rupture, dates clés (public)
+  { path: '/ramadan', name: 'ramadan', component: RamadanView },
   // Cahier de douâas et hadiths du Prophète ﷺ (public)
   { path: '/library', name: 'library', component: LibraryView },
   {

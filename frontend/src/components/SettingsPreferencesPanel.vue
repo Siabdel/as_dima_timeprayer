@@ -57,6 +57,9 @@ const form = reactive({
   language: 'fr',
   alert_modes: {},
   reminder_minutes_before: 0,
+  ramadan_imsak_reminder: false,
+  ramadan_iftar_reminder: false,
+  ramadan_reminder_minutes: 10,
   fajr_adhan_sound_id: null,
   adhan_volume: 100,
   adhan_fade_in: false,
@@ -74,6 +77,9 @@ function mirror(p) {
   form.language = p.language ?? 'fr';
   form.alert_modes = { ...(p.alert_modes ?? {}) };
   form.reminder_minutes_before = p.reminder_minutes_before ?? 0;
+  form.ramadan_imsak_reminder = p.ramadan_imsak_reminder === true;
+  form.ramadan_iftar_reminder = p.ramadan_iftar_reminder === true;
+  form.ramadan_reminder_minutes = p.ramadan_reminder_minutes ?? 10;
   form.fajr_adhan_sound_id = p.fajr_adhan_sound_id ?? null;
   form.adhan_volume = p.adhan_volume ?? 100;
   form.adhan_fade_in = p.adhan_fade_in === true;
@@ -381,6 +387,32 @@ onMounted(async () => {
                   class="form-select form-select-sm w-auto" @change="save()">
             <option v-for="r in REMINDERS" :key="r.value" :value="r.value">{{ r.label }}</option>
           </select>
+        </fieldset>
+
+        <fieldset :disabled="!loaded || saving" class="mt-3">
+          <legend class="form-label small fw-semibold mb-1">
+            <i class="bi bi-moon-stars me-1" aria-hidden="true"></i>Rappels de Ramadan
+          </legend>
+          <div class="form-check form-switch">
+            <input id="ram-imsak" class="form-check-input" type="checkbox" role="switch"
+                   v-model="form.ramadan_imsak_reminder" @change="save()" />
+            <label class="form-check-label" for="ram-imsak">Rappel de l'Imsak (fin du repas avant l'aube)</label>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input id="ram-iftar" class="form-check-input" type="checkbox" role="switch"
+                   v-model="form.ramadan_iftar_reminder" @change="save()" />
+            <label class="form-check-label" for="ram-iftar">Rappel de la rupture du jeûne</label>
+          </div>
+          <label for="ram-min" class="form-label small mb-1">Prévenir</label>
+          <select id="ram-min" v-model.number="form.ramadan_reminder_minutes"
+                  class="form-select form-select-sm w-auto" @change="save()">
+            <option v-for="r in REMINDERS" :key="r.value" :value="r.value">
+              {{ r.value === 0 ? "À l'heure exacte" : r.label }}</option>
+          </select>
+          <p class="form-text mb-0">
+            Actifs seulement pendant le mois de Ramadan, même pendant vos heures calmes.
+            Nécessite les notifications activées.
+          </p>
         </fieldset>
       </div>
     </div>

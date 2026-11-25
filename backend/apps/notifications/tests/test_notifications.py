@@ -266,3 +266,42 @@ class TestSubscriptionEndpoints:
         resp = auth_client.post(self.TEST_URL, {"prayer_name": "dhuhr"}, format="json")
         assert resp.status_code == 400
         assert resp.data["error"]["code"] == "no_subscription"
+
+
+class TestRamadanReminders:
+    """Rappels Imsak / rupture : seulement pendant Ramadan, opt-in, à l'heure décalée."""
+
+    TIMINGS = {"fajr": "06:20", "imsak": "06:10", "maghrib": "18:00"}
+
+    def _prefs(self, **kw):
+        from apps.accounts.models import UserPreference
+        return UserPreference(**kw)
+
+    def _now(self, iso):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        return datetime.fromisoformat(iso).replace(tzinfo=ZoneInfo("Europe/Paris"))
+
+    def test_iftar_reminder_10_min_before_during_ramadan(self):
+        from apps.notifications.tasks import ramadan_kinds_due
+        prefs = self._prefs(ramadan_iftar_reminder=True, ramadan_reminder_minutes=10)
+        assert ramadan_kinds_due(prefs, self.TIMINGS, self._now("2027-02-20T17:51:00")) == ["iftar"]
+        assert ramadan_kinds_due(prefs, self.TIMINGS, self._now("2027-02-20T17:30:00")) == []
+
+    def test_imsak_falls_back_to_fajr_minus_10(self):
+        from apps.notifications.tasks import ramadan_kinds_due
+        prefs = self._prefs(ramadan_imsak_reminder=True, ramadan_reminder_minutes=0)
+        timings = {"fajr": "06:20", "maghrib": "18:00"}
+        assert ramadan_kinds_due(prefs, timings, self._now("2027-02-20T06:11:00")) == ["imsak"]
+
+    def test_nothing_outside_ramadan_or_when_disabled(self):
+        from apps.notifications.tasks import ramadan_kinds_due
+        on = self._prefs(ramadan_iftar_reminder=True, ramadan_imsak_reminder=True, ramadan_reminder_minutes=0)
+        assert ramadan_kinds_due(on, self.TIMINGS, self._now("2027-06-20T18:00:00")) == []
+        off = self._prefs(ramadan_reminder_minutes=0)
+        assert ramadan_kinds_due(off, self.TIMINGS, self._now("2027-02-20T18:00:00")) == []
+
+    def test_payload(self):
+        from apps.notifications.services.push import build_ramadan_payload
+        assert "10 minutes" in build_ramadan_payload("iftar", 10)["body"]
+        assert build_ramadan_payload("imsak", 0)["tag"] == "ramadan-imsak"

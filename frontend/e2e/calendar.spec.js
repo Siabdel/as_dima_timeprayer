@@ -72,4 +72,11 @@ test.describe('Calendrier : onglet France', () => {
     await expect(page.getByRole('columnheader', { name: 'Rupture' })).toBeVisible();
     await expect(page.locator('tbody tr')).toHaveCount(29);
   });
+
+  test('menu principal : entrée Ramadan vers /ramadan', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Ramadan', exact: true }).click();
+    await expect(page).toHaveURL(/\/ramadan$/);
+    await expect(page.getByRole('heading', { name: /Ramadan/ }).first()).toBeVisible();
+  });
 });

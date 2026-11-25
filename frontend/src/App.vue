@@ -79,6 +79,9 @@ onMounted(() => {
               <router-link class="nav-link" to="/calendar">Calendrier</router-link>
             </li>
             <li class="nav-item">
+              <router-link class="nav-link" to="/ramadan">Ramadan</router-link>
+            </li>
+            <li class="nav-item">
               <router-link class="nav-link" to="/library">Douâa &amp; Hadiths</router-link>
             </li>
             <!-- Réglages : toujours visible (redirige vers la connexion si besoin) -->

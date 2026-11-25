@@ -28,6 +28,7 @@ from .services.push import (
     GoneSubscriptionError,
     PushSendError,
     build_payload,
+    build_ramadan_payload,
     send_push,
 )
 
@@ -75,6 +76,67 @@ def _next_prayer_due(timings: dict, now_local: datetime) -> str | None:
         if due_at <= now_local < due_at + SCAN_INTERVAL:
             return prayer
     return None
+
+
+def _is_due(time_str: str | None, now_local: datetime) -> bool:
+    """L'heure "HH:MM" tombe-t-elle dans la fenêtre de scan courante ?"""
+    if not time_str:
+        return False
+    hour, minute = map(int, time_str.split(":")[:2])
+    due_at = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return due_at <= now_local < due_at + SCAN_INTERVAL
+
+
+def _is_ramadan(day) -> bool:
+    """Le jour (date locale) est-il dans le mois hégirien de Ramadan ?"""
+    from hijridate import Gregorian
+
+    return Gregorian(day.year, day.month, day.day).to_hijri().month == 9
+
+
+def _imsak_time(timings: dict) -> str | None:
+    """Imsak d'Aladhan, sinon Fajr - 10 min (anciennes entrées de cache)."""
+    if timings.get("imsak"):
+        return timings["imsak"]
+    fajr = timings.get("fajr")
+    if not fajr:
+        return None
+    hour, minute = map(int, fajr.split(":")[:2])
+    total = (hour * 60 + minute - 10) % 1440
+    return f"{total // 60:02d}:{total % 60:02d}"
+
+
+def ramadan_kinds_due(prefs: UserPreference, timings: dict, now_local: datetime) -> list[str]:
+    """Rappels de Ramadan (« imsak », « iftar ») à envoyer dans la fenêtre courante."""
+    if not (prefs.ramadan_imsak_reminder or prefs.ramadan_iftar_reminder):
+        return []
+    if not _is_ramadan(now_local.date()):
+        return []
+    shifted = now_local + timedelta(minutes=prefs.ramadan_reminder_minutes or 0)
+    due = []
+    if prefs.ramadan_imsak_reminder and _is_due(_imsak_time(timings), shifted):
+        due.append("imsak")
+    if prefs.ramadan_iftar_reminder and _is_due(timings.get("maghrib"), shifted):
+        due.append("iftar")
+    return due
+
+
+@shared_task
+def send_ramadan_reminder(user_id: int, kind: str, minutes: int) -> str:
+    """Rappel Imsak / rupture du jeûne : notification simple, hors heures calmes (choix explicite)."""
+    if kind not in ("imsak", "iftar"):
+        return "skipped:unknown-kind"
+    payload = build_ramadan_payload(kind, minutes)
+    sent = 0
+    for subscription in PushSubscription.objects.filter(user_id=user_id):
+        try:
+            send_push(subscription, payload)
+            sent += 1
+        except GoneSubscriptionError:
+            subscription.delete()
+        except PushSendError:
+            continue
+    return f"ramadan-sent:{sent}"
 
 
 def _sound_url_for(prefs: UserPreference, prayer_name: str, alert_mode: str) -> str | None:
@@ -243,6 +305,12 @@ def scan_prayer_notifications() -> dict:
             remind_key = f"notif-remind-dedup:{prefs.user_id}:{upcoming}:{date_iso}"
             if upcoming and cache.add(remind_key, "1", timeout=3600):
                 send_prayer_reminder.delay(prefs.user_id, upcoming, minutes)
+
+        # Rappels de Ramadan (Imsak / rupture), opt-in.
+        for kind in ramadan_kinds_due(prefs, timings, now_local):
+            if cache.add(f"notif-ramadan-dedup:{prefs.user_id}:{kind}:{date_iso}", "1", timeout=3600):
+                send_ramadan_reminder.delay(prefs.user_id, kind, prefs.ramadan_reminder_minutes or 0)
+                triggered.append({"user": prefs.user_id, "ramadan": kind})
 
         prayer = _next_prayer_due(timings, now_local)
         if prayer is None:

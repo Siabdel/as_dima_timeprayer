@@ -93,3 +93,23 @@ def build_payload(
             "fade_in": fade_in,
         },
     }
+
+
+RAMADAN_KINDS = {
+    "imsak": ("🌙 Imsak", "l'Imsak", "Fin du repas avant l'aube : le jeûne commence."),
+    "iftar": ("🌙 Rupture du jeûne", "la rupture du jeûne",
+              "Il est l'heure de rompre le jeûne. اللهم لك صمت وعلى رزقك أفطرت"),
+}
+
+
+def build_ramadan_payload(kind: str, minutes: int = 0) -> dict:
+    """Notification de rappel Imsak / rupture du jeûne (Ramadan), sans Adhan."""
+    title, label, at_time = RAMADAN_KINDS[kind]
+    body = f"{label.capitalize()} dans {minutes} minutes." if minutes else at_time
+    return {
+        "title": title,
+        "body": body,
+        "tag": f"ramadan-{kind}",
+        "data": {"ramadan": kind, "sound_url": None, "alert_mode": "beep",
+                 "volume": 100, "fade_in": False},
+    }
