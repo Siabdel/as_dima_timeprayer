@@ -55,7 +55,7 @@ Voir [TODO.md](TODO.md) (vérifications navigateur, migration prod, limites conn
 - **Réseau :** frontend (nginx conteneur) publié sur `127.0.0.1:8081` (`docker-compose.vps.yml`). Le nginx de l'hôte
   (`/etc/nginx/sites-available/salawat.dimatlas.com`, modèle : `deploy/nginx-salawat.conf`) porte le HTTPS (certbot, renouvellement auto).
 - **DNS :** enregistrement A `salawat` → IP de la VPS (zone `dimatlas.com`).
-- **Secrets :** `/opt/salawat/.env` (chmod 600, hors dépôt) : SECRET_KEY, mots de passe, clés VAPID générées au déploiement. `LOCAL_RECITERS_ENABLED=false` (pas d'audio Benmoussa).
+- **Secrets :** `/opt/salawat/.env` (chmod 600, hors dépôt) : SECRET_KEY, mots de passe, clés VAPID générées au déploiement. `LOCAL_RECITERS_ENABLED=true` + `LOCAL_RECITERS_SURAHS=100-114` : seul l'audio des 15 petites sourates de Benmoussa est déployé (`/opt/salawat/frontend/public/quran/benmoussa/`, 3,9 Mo). Les autres sourates renvoient un 404 explicite. Pour en ajouter : copier les mp3, élargir `LOCAL_RECITERS_SURAHS`, `up -d --build`.
 - **Mise à jour :**
   ```bash
   rsync -az --delete --exclude .git --exclude node_modules --exclude frontend/dist --exclude frontend/public/quran \
