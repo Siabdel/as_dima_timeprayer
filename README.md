@@ -89,4 +89,4 @@ frontend/src/   views, components, stores (Pinia), services, api, utils, sw.js
 
 ## Documents
 
-[DEPLOYMENT.md](DEPLOYMENT.md) · [PARTAGER.md](PARTAGER.md) · [BACKUP.md](BACKUP.md) · [TODO.md](TODO.md) · [HANDOFF.md](HANDOFF.md) · [openapi.yaml](openapi.yaml)
+[DEPLOYMENT.md](DEPLOYMENT.md) · [DEPLOY.md](DEPLOY.md) · [PARTAGER.md](PARTAGER.md) · [BACKUP.md](BACKUP.md) · [TODO.md](TODO.md) · [HANDOFF.md](HANDOFF.md) · [openapi.yaml](openapi.yaml)

@@ -50,6 +50,7 @@ Voir [TODO.md](TODO.md) (vérifications navigateur, migration prod, limites conn
 - Les récitations locales (`public/quran/`, 816 Mo) ne sont pas pré-cachées ni cachées par le SW.
 
 ## Déploiement VPS Hostinger (salawat.dimatlas.com)
+Procédure complète et pièges : [DEPLOY.md](DEPLOY.md). Résumé :
 - **Où :** VPS KVM 2 (Debian 13, `187.124.184.110`), projet Compose `dimatimeprayer-prod` dans `/opt/salawat`.
   Cohabite avec le portail existant (`/home/django/dimatlas-portal`, projet `dimatlas`, 127.0.0.1:8000) — ne pas y toucher.
 - **Réseau :** frontend (nginx conteneur) publié sur `127.0.0.1:8081` (`docker-compose.vps.yml`). Le nginx de l'hôte

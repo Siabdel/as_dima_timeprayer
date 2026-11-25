@@ -1,5 +1,8 @@
 # Procédure de déploiement — Prière & Coran
 
+> Guide **générique**. Pour la procédure réellement suivie sur la VPS Hostinger
+> (`salawat.dimatlas.com`, cohabitation avec le portail, nginx hôte), voir [DEPLOY.md](DEPLOY.md).
+
 Ce document décrit **deux chemins de déploiement** pour l'application :
 
 | Partie | Cible | Contenu |
