@@ -39,6 +39,9 @@
 - [x] Menu : lien « Douâa & Hadiths » coupé sur écran moyen → burger sous 1200 px, déployé 2026-11-25.
 - [ ] Vérifier le menu (burger et ligne unique) sur un vrai téléphone/tablette.
 
+- [x] Bibliothèque vide en production → `seed_library` exécuté (19 douâas, 19 hadiths) le 2026-11-25.
+- [ ] Intégrer `seed_library` aux étapes de déploiement (DEPLOY.md) pour ne pas l'oublier.
+
 ## Météo
 - [ ] Libellé du temps pour les jours suivants (l'API n'expose que celui du moment présent).
 - [ ] Icônes jour/nuit ; alertes météo.
