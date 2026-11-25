@@ -194,6 +194,11 @@ const chartUnit = computed(() => (tab.value === 'precip' ? '%' : tab.value === '
         </button>
       </li>
     </ul>
+    <p class="pc-weather-credit">
+      Données météo :
+      <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a>
+      (CC BY 4.0)
+    </p>
   </section>
 
   <div v-else-if="loading" class="pc-weather pc-weather-muted text-center" role="status">
@@ -249,6 +254,8 @@ const chartUnit = computed(() => (tab.value === 'precip' ? '%' : tab.value === '
   padding: 0.5rem 0.25rem; text-align: center; cursor: pointer; text-transform: capitalize;
 }
 .pc-weather-days button.on { background: #35363a; }
+.pc-weather-credit { margin: 0.9rem 0 0; font-size: 0.7rem; color: var(--w-muted); text-align: right; }
+.pc-weather-credit a { color: var(--w-muted); text-decoration: underline; }
 .pc-weather-days .bi { font-size: 1.5rem; color: var(--w-accent); }
 
 @media (max-width: 575.98px) {
