@@ -2,3 +2,7 @@ node_modules
 dist
 dev-dist
 .git
+.playwright-browsers
+test-results
+playwright-report
+e2e
