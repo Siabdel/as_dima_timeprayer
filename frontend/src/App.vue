@@ -7,6 +7,8 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useQuranPlayerStore } from './stores/quranPlayer';
 import { initAdhanPushListener } from './services/adhanAudio';
+import { initPwaInstall } from './services/pwaInstall';
+import InstallPrompt from './components/InstallPrompt.vue';
 import AudioPlayer from './components/AudioPlayer.vue';
 
 const router = useRouter();
@@ -31,6 +33,7 @@ onMounted(() => {
   // soundUrl } — on joue le son d'Adhan dans cette fenêtre (un SW ne peut
   // pas jouer d'audio lui-même). Aucun effet hors notifications Adhan.
   initAdhanPushListener();
+  initPwaInstall();
 });
 </script>
 
@@ -43,7 +46,8 @@ onMounted(() => {
     >
       <div class="container">
         <router-link class="navbar-brand fw-bold" to="/">
-          <span aria-hidden="true">🕌</span> Prière &amp; Coran
+          <img src="/icons/icon-192.png" alt="" width="30" height="30" class="pc-brand-icon me-2" />Salawat
+          <small class="fw-normal opacity-75 d-none d-sm-inline">Prière &amp; Coran</small>
         </router-link>
 
         <!-- Bouton burger (mobile), piloté par le JS de Bootstrap -->
@@ -112,12 +116,13 @@ onMounted(() => {
 
     <!-- Contenu des pages -->
     <main class="container py-4 flex-grow-1">
+      <InstallPrompt />
       <router-view />
     </main>
 
     <!-- Footer sobre : aucun suivi, aucune publicité -->
     <footer class="pc-footer py-3 text-center">
-      <small>Prière &amp; Coran — sans publicité, respectueux de votre vie privée</small>
+      <small>Salawat · Prière &amp; Coran — sans publicité, respectueux de votre vie privée</small>
     </footer>
 
     <!-- Lecteur audio du Coran : barre fixe en bas, visible pendant la lecture.
@@ -129,3 +134,7 @@ onMounted(() => {
     <audio ref="audioEl" preload="metadata" crossorigin="anonymous" class="d-none"></audio>
   </div>
 </template>
+
+<style scoped>
+.pc-brand-icon { border-radius: 8px; vertical-align: -8px; }
+</style>

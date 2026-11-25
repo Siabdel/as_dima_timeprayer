@@ -66,5 +66,15 @@ Procédure complète et pièges : [DEPLOY.md](DEPLOY.md). Résumé :
 - **Accès :** la clé SSH dédiée au déploiement (`claude-deploy-salawat`) a été **retirée** de la VPS et supprimée en local (2026-11-25). Pour une mise à jour : ajouter une nouvelle clé (hPanel ou API Hostinger), exécuter les commandes ci-dessus, puis la retirer.
 - **À faire :** `docker compose ... exec backend python manage.py createsuperuser` pour l'admin Django.
 
+## Identité de l'app et installation (PWA)
+- Nom affiché : **Salawat** (manifeste : « Salawat — Prière & Coran »). Icônes générées par `frontend/scripts/make-icons.mjs`
+  (mosquée dorée sur fond vert) : `icon-192/512` (any), `maskable-192/512`, `apple-touch-icon` (iPhone), favicons.
+  Pour modifier le dessin : éditer le script puis `node scripts/make-icons.mjs`.
+- Les anciennes icônes étaient des carrés verts unis (sans dessin) et il n'y avait pas d'`apple-touch-icon` : d'où l'absence d'icône
+  identifiable sur les téléphones.
+- Invitation d'installation : `services/pwaInstall.js` + `components/InstallPrompt.vue` (Android : bouton « Installer » via
+  `beforeinstallprompt` ; iPhone : étapes « Partager → Sur l'écran d'accueil »), mémorisation 7 jours de « Plus tard ».
+- Chrome ne montre pas toujours d'invite après un scan de QR code : l'invitation intégrée à l'app compense.
+
 ## Sauvegardes
 Scripts `deploy/backup-db.sh` / `deploy/restore-db.sh` prêts et testés en local ; **pas encore installés sur la VPS**. Procédure complète : [BACKUP.md](BACKUP.md).

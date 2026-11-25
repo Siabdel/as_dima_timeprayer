@@ -6,12 +6,13 @@
 // ===========================================================================
 import { ref, computed, onMounted } from 'vue';
 import QRCode from 'qrcode';
+import { installState, installAvailable, promptInstall } from '../services/pwaInstall';
 
 const url = computed(() => window.location.origin + '/');
 const qrDataUrl = ref('');
 const copied = ref(false);
 const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-const message = "Assalamou alaykoum ! Voici l'application Prière & Coran : horaires de prière, Coran, météo.";
+const message = "Assalamou alaykoum ! Voici Salawat (Prière & Coran) : horaires de prière, Coran, météo.";
 
 onMounted(async () => {
   try {
@@ -28,7 +29,7 @@ onMounted(async () => {
 
 async function share() {
   try {
-    await navigator.share({ title: 'Prière & Coran', text: message, url: url.value });
+    await navigator.share({ title: 'Salawat — Prière & Coran', text: message, url: url.value });
   } catch {
     /* partage annulé */
   }
@@ -64,6 +65,10 @@ async function copy() {
         <button type="button" class="btn btn-outline-pc" @click="copy">
           <i class="bi me-1" :class="copied ? 'bi-check2' : 'bi-clipboard'" aria-hidden="true"></i>
           {{ copied ? 'Lien copié' : 'Copier le lien' }}
+        </button>
+        <button v-if="installAvailable() && installState.canPrompt" type="button" class="btn btn-outline-pc"
+                @click="promptInstall">
+          <i class="bi bi-phone me-1" aria-hidden="true"></i>Installer sur cet appareil
         </button>
         <a v-if="qrDataUrl" class="btn btn-outline-secondary" :href="qrDataUrl" download="priere-et-coran-qr.png">
           <i class="bi bi-download me-1" aria-hidden="true"></i>Télécharger le QR

@@ -15,7 +15,11 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'],
+      includeAssets: [
+        'icons/favicon.svg', 'icons/favicon-32.png', 'icons/favicon-16.png',
+        'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png',
+        'icons/maskable-192.png', 'icons/maskable-512.png'
+      ],
       // Stratégie « injectManifest » : le service worker est écrit à la main
       // (src/sw.js) pour gérer les notifications Web Push (affichage +
       // transmission du son d'Adhan à une fenêtre ouverte). vite-plugin-pwa
@@ -31,8 +35,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2,ico}'],
       },
       manifest: {
-        name: 'Prière & Coran',
-        short_name: 'Prière&Coran',
+        name: 'Salawat — Prière & Coran',
+        short_name: 'Salawat',
         description: 'Horaires de prière, météo, rappels Adhan et lecture du Saint Coran',
         theme_color: '#14746F',
         background_color: '#f8f9fa',
@@ -49,8 +53,9 @@ export default defineConfig({
           { name: 'Réglages', url: '/settings', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] }
         ],
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icons/maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       }

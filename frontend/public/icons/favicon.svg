@@ -1,5 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#14746F"/>
-  <path d="M42 12a20 20 0 1 0 0 40 24 24 0 1 1 0-40z" fill="#ffffff"/>
-  <path d="M46 22l2.2 4.6 5 .6-3.7 3.4 1 4.9-4.5-2.5-4.5 2.5 1-4.9-3.7-3.4 5-.6z" fill="#E9C46A"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#1B8C85"/><stop offset=".55" stop-color="#14746F"/><stop offset="1" stop-color="#0B4B47"/>
+  </linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(256 258) scale(1.04) translate(-256 -262)">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBE7A6"/><stop offset=".55" stop-color="#E9C46A"/><stop offset="1" stop-color="#C98F2E"/>
+    </linearGradient>
+  </defs>
+  <!-- halo derrière le dôme -->
+  <circle cx="256" cy="262" r="150" fill="#ffffff" opacity=".07"/>
+  <!-- minarets -->
+  <g fill="url(#gold)">
+    <rect x="126" y="262" width="30" height="150" rx="3"/>
+    <path d="M141 218 L158 262 L124 262 Z"/>
+    <rect x="356" y="262" width="30" height="150" rx="3"/>
+    <path d="M371 218 L388 262 L354 262 Z"/>
+    <rect x="124" y="296" width="34" height="8" rx="2"/><rect x="354" y="296" width="34" height="8" rx="2"/>
+    <!-- dôme central -->
+    <path d="M168 346 C168 262 208 214 256 198 C304 214 344 262 344 346 Z"/>
+    <!-- salle de prière -->
+    <rect x="150" y="346" width="212" height="66" rx="4"/>
+    <rect x="108" y="408" width="296" height="16" rx="6"/>
+  </g>
+  <!-- porte en arc -->
+  <path d="M232 412 L232 376 C232 354 280 354 280 376 L280 412 Z" fill="#0E4F4B"/>
+  <!-- croissant au sommet (vrai croissant, découpé par un masque) -->
+  <mask id="cres"><rect width="512" height="512" fill="#fff"/><circle cx="272" cy="156" r="27" fill="#000"/></mask>
+  <circle cx="256" cy="166" r="32" fill="url(#gold)" mask="url(#cres)"/>
+  <path d="M256 190 L256 204" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/>
+  <!-- étoiles -->
+  <g fill="#FBE7A6" opacity=".9">
+    <path d="M118 150 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5z"/>
+    <path d="M400 128 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4z"/>
+    <path d="M372 196 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" opacity=".7"/>
+  </g></g>
 </svg>
