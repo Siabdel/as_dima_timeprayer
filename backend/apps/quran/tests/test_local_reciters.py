@@ -99,3 +99,23 @@ class TestLocalRecitersDisabled:
         assert local_reciters.as_list() == []
         resp = api_client.get("/api/v1/quran/audio/chapter/1/", {"reciter_id": "benmoussa"})
         assert resp.status_code == 400
+
+
+class TestPartialSurahs:
+    def test_label_and_parse(self, monkeypatch):
+        monkeypatch.setenv("LOCAL_RECITERS_SURAHS", "1,100-114")
+        assert local_reciters.available_surahs() == {1, *range(100, 115)}
+        assert local_reciters.surahs_label({1, *range(100, 115)}) == "sourates 1, 100-114"
+
+    def test_only_available_surahs_playable(self, api_client, monkeypatch):
+        monkeypatch.setenv("LOCAL_RECITERS_SURAHS", "100-114")
+        ok = api_client.get("/api/v1/quran/audio/chapter/112/", {"reciter_id": "benmoussa"})
+        assert ok.status_code == 200
+        assert ok.data["audio_url"] == "/quran/benmoussa/112.mp3"
+        missing = api_client.get("/api/v1/quran/audio/chapter/2/", {"reciter_id": "benmoussa"})
+        assert missing.status_code == 404
+        assert "pas disponible" in missing.data["error"]["message"]
+
+    def test_style_mentions_surahs(self, monkeypatch):
+        monkeypatch.setenv("LOCAL_RECITERS_SURAHS", "100-114")
+        assert "sourates 100-114" in local_reciters.as_list()[0]["style"]

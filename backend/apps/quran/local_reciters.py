@@ -19,6 +19,46 @@ def _enabled() -> bool:
     return os.environ.get("LOCAL_RECITERS_ENABLED", "true").lower() != "false"
 
 
+def available_surahs() -> set[int] | None:
+    """
+    Sourates dont les MP3 sont déployés (LOCAL_RECITERS_SURAHS="100-114" ou
+    "1,2,100-114"). None = toutes (114). Permet de ne livrer qu'une partie de
+    l'audio (ex. les petites sourates) sans casser les autres.
+    """
+    raw = os.environ.get("LOCAL_RECITERS_SURAHS", "").strip()
+    if not raw:
+        return None
+    result: set[int] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if "-" in part:
+            a, _, b = part.partition("-")
+            if a.strip().isdigit() and b.strip().isdigit():
+                result.update(range(int(a), int(b) + 1))
+        elif part.isdigit():
+            result.add(int(part))
+    return {n for n in result if 1 <= n <= 114} or None
+
+
+def surahs_label(surahs: set[int] | None) -> str:
+    """« sourates 100-114 » (plages compactées), vide si toutes."""
+    if not surahs:
+        return ""
+    nums, ranges, start = sorted(surahs), [], None
+    for i, n in enumerate(nums):
+        if start is None:
+            start = prev = n
+        elif n == prev + 1:
+            prev = n
+        else:
+            ranges.append((start, prev))
+            start = prev = n
+        if i == len(nums) - 1:
+            ranges.append((start, prev))
+    text = ", ".join(f"{a}-{b}" if a != b else str(a) for a, b in ranges)
+    return f"sourates {text}"
+
+
 @dataclass(frozen=True)
 class LocalReciter:
     """Un récitateur hébergé localement (chapitres complets)."""
@@ -70,11 +110,12 @@ def as_list() -> list[dict]:
     """Liste sérialisée pour l'API (ajoutée à GET /quran/reciters/)."""
     if not _enabled():
         return []
+    label = surahs_label(available_surahs())
     return [
         {
             "id": r.id,
             "name": r.name,
-            "style": r.riwaya,
+            "style": f"{r.riwaya} · {label}" if label else r.riwaya,
             "source": r.source,
             "local": True,
         }

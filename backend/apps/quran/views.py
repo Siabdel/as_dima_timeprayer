@@ -203,6 +203,8 @@ class ChapterAudioView(APIView):
                 )
         try:
             audio = quran_client.fetch_chapter_audio(surah, reciter_id)
+        except quran_client.SurahNotAvailableError as exc:
+            return _error_response("not_available", str(exc), status.HTTP_404_NOT_FOUND)
         except quran_client.QuranAPIError as exc:
             return _error_response(
                 "external_api_error", str(exc), status.HTTP_503_SERVICE_UNAVAILABLE

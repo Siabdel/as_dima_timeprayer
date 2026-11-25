@@ -298,6 +298,10 @@ def extra_reciters_public() -> list[dict]:
     ]
 
 
+class SurahNotAvailableError(QuranAPIError):
+    """Sourate absente du catalogue audio d'un récitateur local."""
+
+
 def fetch_chapter_audio(surah: int, reciter_id) -> dict:
     """URL audio de la sourate complète pour un réciteur donné."""
     # 1. Récitateur hébergé LOCALEMENT (identifiant texte, ex. « benmoussa »).
@@ -305,6 +309,13 @@ def fetch_chapter_audio(surah: int, reciter_id) -> dict:
 
     local = get_local_reciter(reciter_id)
     if local is not None:
+        from apps.quran.local_reciters import available_surahs
+
+        allowed = available_surahs()
+        if allowed is not None and surah not in allowed:
+            raise SurahNotAvailableError(
+                "Cette sourate n'est pas disponible pour ce récitateur."
+            )
         return {"audio_url": chapter_path(local, surah), "timestamps": []}
 
     # 2. Récitateurs « extra » streamés depuis un CDN externe (ids numériques).

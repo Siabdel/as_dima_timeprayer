@@ -285,8 +285,11 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
           : [];
         this._resetFollow();
         await this._playUrl(data?.audio_url);
-      } catch {
-        this.error = "Impossible de récupérer l'audio de la sourate.";
+      } catch (e) {
+        this.error =
+          e?.response?.status === 404 && e.response.data?.error?.message
+            ? e.response.data.error.message
+            : "Impossible de récupérer l'audio de la sourate.";
         this.playing = false;
       } finally {
         this.loading = false;
