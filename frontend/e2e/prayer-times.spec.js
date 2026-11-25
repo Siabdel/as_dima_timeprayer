@@ -43,7 +43,13 @@ test.describe('Horaires de prière', () => {
   });
 
   test('méthode et madhhab se règlent dans les Réglages et rechargent les horaires', async ({ page }) => {
-    await page.addInitScript(() => window.localStorage.clear());
+    // Vide le stockage une seule fois (sinon chaque navigation effacerait le choix mémorisé).
+    await page.addInitScript(() => {
+      if (!window.sessionStorage.getItem('pc_e2e_cleared')) {
+        window.localStorage.clear();
+        window.sessionStorage.setItem('pc_e2e_cleared', '1');
+      }
+    });
     await page.goto('/');
     await page.getByRole('button', { name: /ville/i }).first().click();
     await page.fill('#pc-city', 'Paris');
