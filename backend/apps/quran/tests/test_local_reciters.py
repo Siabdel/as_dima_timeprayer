@@ -119,3 +119,16 @@ class TestPartialSurahs:
     def test_style_mentions_surahs(self, monkeypatch):
         monkeypatch.setenv("LOCAL_RECITERS_SURAHS", "100-114")
         assert "sourates 100-114" in local_reciters.as_list()[0]["style"]
+
+
+class TestEnabledIds:
+    def test_only_listed_reciters_exposed(self, api_client, monkeypatch):
+        monkeypatch.setenv("LOCAL_RECITERS_IDS", "benmoussa")
+        assert [r["id"] for r in local_reciters.as_list()] == ["benmoussa"]
+        assert local_reciters.get_local_reciter("hssain") is None
+        resp = api_client.get("/api/v1/quran/audio/chapter/112/", {"reciter_id": "hssain"})
+        assert resp.status_code == 400
+
+    def test_default_exposes_all(self, monkeypatch):
+        monkeypatch.delenv("LOCAL_RECITERS_IDS", raising=False)
+        assert {"benmoussa", "hssain"} <= {r["id"] for r in local_reciters.as_list()}

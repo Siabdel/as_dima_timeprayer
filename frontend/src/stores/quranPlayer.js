@@ -95,6 +95,21 @@ function readStoredReciter() {
   }
 }
 
+/**
+ * Message lisible pour une erreur d'appel audio : sourate indisponible (404),
+ * limite de requêtes (429), sinon message par défaut.
+ */
+function audioErrorMessage(error, fallback) {
+  const status = error?.response?.status;
+  if (status === 429) {
+    return 'Trop de requêtes en peu de temps : réessayez dans quelques minutes.';
+  }
+  if (status === 404 && error.response.data?.error?.message) {
+    return error.response.data.error.message;
+  }
+  return fallback;
+}
+
 export const useQuranPlayerStore = defineStore('quranPlayer', {
   state: () => ({
     /** Numéro de la sourate en cours de lecture (ou null). */
@@ -105,6 +120,10 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
     audioUrl: null,
     /** Récitateur sélectionné, persisté dans le localStorage. */
     reciterId: readStoredReciter(),
+    /** Récitateur précédent (restauré si le changement échoue). */
+    previousReciterId: null,
+    /** Information non bloquante (ex. repli sur la sourate entière). */
+    info: null,
     /** Vrai tant que l'audio joue. */
     playing: false,
     /** Vrai pendant la récupération d'une URL audio. */
@@ -230,11 +249,23 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
         Number.isInteger(numeric) && String(numeric) === raw && numeric > 0
           ? numeric
           : raw;
+      if (value !== this.reciterId) this.previousReciterId = this.reciterId;
       this.reciterId = value;
       try {
         window.localStorage.setItem(RECITER_KEY, String(value));
       } catch {
         // Persistance indisponible : le choix reste valable pour la session.
+      }
+    },
+
+    /** Revient au récitateur précédent après un changement raté (usage interne). */
+    _restorePreviousReciter() {
+      if (this.previousReciterId === null || this.previousReciterId === this.reciterId) return;
+      this.reciterId = this.previousReciterId;
+      try {
+        window.localStorage.setItem(RECITER_KEY, String(this.reciterId));
+      } catch {
+        /* persistance indisponible */
       }
     },
 
@@ -286,10 +317,7 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
         this._resetFollow();
         await this._playUrl(data?.audio_url);
       } catch (e) {
-        this.error =
-          e?.response?.status === 404 && e.response.data?.error?.message
-            ? e.response.data.error.message
-            : "Impossible de récupérer l'audio de la sourate.";
+        this.error = audioErrorMessage(e, "Impossible de récupérer l'audio de la sourate.");
         this.playing = false;
       } finally {
         this.loading = false;
@@ -325,8 +353,8 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
         const { data } = await getVerseAudio(surahNumber, ayahNumber, this.reciterId);
         if (this.currentSurah !== surahNumber || this.currentAyah !== ayahNumber) return;
         await this._playUrl(data?.audio_url);
-      } catch {
-        this.error = "Impossible de récupérer l'audio du verset.";
+      } catch (e) {
+        this.error = audioErrorMessage(e, "Impossible de récupérer l'audio du verset.");
         this.playing = false;
       } finally {
         this.loading = false;
@@ -415,17 +443,33 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
       const wasPlaying = this.playing;
       this.loading = true;
       this.error = null;
+      this.info = null;
       try {
-        const { data } =
-          ayah !== null
-            ? await getVerseAudio(surah, ayah, this.reciterId)
-            : await getChapterAudio(surah, this.reciterId);
+        let data;
+        let chapterMode = ayah === null;
+        if (ayah !== null) {
+          try {
+            ({ data } = await getVerseAudio(surah, ayah, this.reciterId));
+          } catch (e) {
+            if (e?.response?.status === 429) throw e;
+            // Ce récitateur n'a pas d'audio « verset par verset » (récitateurs
+            // marocains, locaux…) : on lit la sourate entière à la place.
+            ({ data } = await getChapterAudio(surah, this.reciterId));
+            chapterMode = true;
+            this.info =
+              'Ce récitateur ne propose pas la lecture verset par verset : lecture de la sourate entière.';
+          }
+        } else {
+          ({ data } = await getChapterAudio(surah, this.reciterId));
+        }
         const url = data?.audio_url;
         if (!url || !audioEl) return;
-        if (ayah === null) {
+        if (chapterMode) {
+          this.currentAyah = null;
           this.chapterTimestamps = Array.isArray(data?.timestamps)
             ? data.timestamps
             : [];
+          this._resetFollow();
         }
         this.audioUrl = url;
         audioEl.src = url;
@@ -437,8 +481,10 @@ export const useQuranPlayerStore = defineStore('quranPlayer', {
             this.playing = false;
           });
         }
-      } catch {
-        this.error = 'Impossible de changer de récitateur.';
+      } catch (e) {
+        // Échec : on garde la lecture en cours et on revient au récitateur précédent.
+        this.error = audioErrorMessage(e, 'Impossible de changer de récitateur.');
+        this._restorePreviousReciter();
       } finally {
         this.loading = false;
       }

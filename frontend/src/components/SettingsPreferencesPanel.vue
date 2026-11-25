@@ -158,6 +158,7 @@ const shownReciters = computed(() =>
 );
 let previewAudio = null;
 const previewingReciter = ref(null);
+const previewError = ref('');
 function stopReciterPreview() {
   if (previewAudio) {
     previewAudio.pause();
@@ -170,7 +171,10 @@ async function previewReciter(r) {
   stopReciterPreview();
   previewingReciter.value = r.id;
   try {
-    const { data } = await getChapterAudio(1, r.id); // Al-Fatiha
+    // Al-Ikhlas (112) : courte et disponible pour tous les récitateurs
+    // (certains, comme Benmoussa, n'ont que les petites sourates).
+    previewError.value = '';
+    const { data } = await getChapterAudio(112, r.id);
     if (previewingReciter.value !== r.id) return;
     previewAudio = new Audio(data.audio_url);
     previewAudio.addEventListener('ended', stopReciterPreview);
@@ -179,14 +183,20 @@ async function previewReciter(r) {
       if (previewAudio && previewAudio.currentTime > 15) stopReciterPreview();
     });
     await previewAudio.play();
-  } catch {
+  } catch (e) {
     stopReciterPreview();
+    previewError.value =
+      e?.response?.status === 429
+        ? 'Trop de requêtes en peu de temps : réessayez dans quelques minutes.'
+        : `Aperçu indisponible pour ${r.name}.`;
   }
 }
 function chooseReciter(id) {
   player.setReciter(id);
   if (player.audioUrl) player.reloadCurrent();
 }
+// Si le changement échoue (sourate absente…), le store restaure l'ancien choix.
+
 
 const AUDIO_CACHE = 'pc-audio-v1';
 const cacheSupported = typeof caches !== 'undefined';
@@ -405,6 +415,7 @@ onMounted(async () => {
                  aria-hidden="true"></i>
             </button>
           </div>
+          <p v-if="previewError" class="text-danger small mb-0 py-2" role="alert">{{ previewError }}</p>
           <p v-if="!shownReciters.length" class="text-muted small mb-0">
             Liste des récitateurs indisponible pour le moment.
           </p>

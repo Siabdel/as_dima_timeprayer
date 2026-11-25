@@ -142,8 +142,10 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
+        # Appli publique de lecture : aperçus de récitateurs, versets, météo…
+        # (100/h était atteint en quelques minutes). Surchargeable par env.
+        "anon": os.environ.get("THROTTLE_ANON", "1500/hour"),
+        "user": os.environ.get("THROTTLE_USER", "5000/hour"),
         "register": "5/hour",
         "notification_test": "10/hour",
     },

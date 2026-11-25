@@ -120,6 +120,9 @@ onBeforeUnmount(() => {
             {{ player.currentLabel || 'Lecture' }}
           </span>
         </span>
+        <small v-if="player.info && !player.error" class="d-block text-muted">
+          {{ player.info }}
+        </small>
         <small v-if="player.error" class="pc-player-error d-block">
           {{ player.error }}
         </small>

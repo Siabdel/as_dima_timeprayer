@@ -138,7 +138,10 @@ VAPID_ADMIN_EMAIL={admin_email}
 VITE_API_BASE_URL=/api/v1
 VITE_VAPID_PUBLIC_KEY={pub}
 LOCAL_RECITERS_ENABLED=true
+LOCAL_RECITERS_IDS=benmoussa
 LOCAL_RECITERS_SURAHS=100-114
+THROTTLE_ANON=1500/hour
+THROTTLE_USER=5000/hour
 TZ=Europe/Paris
 """)
 ```
@@ -192,8 +195,13 @@ Dans `/opt/salawat/.env` :
 
 ```ini
 LOCAL_RECITERS_ENABLED=true
+LOCAL_RECITERS_IDS=benmoussa      # seuls les récitateurs locaux dont les MP3 sont déployés
 LOCAL_RECITERS_SURAHS=100-114
 ```
+
+> `LOCAL_RECITERS_IDS` évite d'afficher un récitateur dont l'audio n'est pas sur le serveur
+> (ex. `hssain` : ses fichiers ne sont pas déployés). `LOCAL_RECITERS_SURAHS` s'applique à
+> tous les récitateurs listés.
 
 Puis `up -d --build` (les mp3 sont intégrés à l'image du frontend). L'API refuse proprement
 les autres sourates (404 « Cette sourate n'est pas disponible pour ce récitateur »).
@@ -303,6 +311,8 @@ Le 2026-11-25, la clé a été retirée à la fin du déploiement.
 | Dossier envoyé de 716 Mo | `frontend/.playwright-browsers` (700 Mo) inclus | Exclusion `rsync` + ajout à `frontend/.dockerignore` |
 | `rsync --delete` ne supprime pas les exclus | Les fichiers exclus sont protégés côté destination | Les supprimer à la main sur la VPS |
 | Requête HTTP brute → `301 https://backend:8000` | Normal : Django voit `X-Forwarded-Proto: http` avant la redirection nginx | Disparaît une fois le HTTPS certbot actif |
+| Erreurs « Impossible de changer de récitateur » / aperçus muets | Limite de requêtes API de 100/h par visiteur, atteinte en quelques minutes ; aperçu sur la sourate 1 alors que Benmoussa n'a que 100-114 | `THROTTLE_ANON=1500/hour` (env), aperçu sur la sourate 112, messages d'erreur explicites (429, 404) et retour au récitateur précédent |
+| Récitateur local visible sans audio | Catalogue exposé sans les MP3 déployés | `LOCAL_RECITERS_IDS` limite la liste aux récitateurs déployés |
 | `curl …/quran/benmoussa/001.mp3` → 200 alors que le fichier n'existe pas | Repli SPA de nginx (`index.html`) | Sans conséquence : l'API répond 404 pour les sourates absentes |
 
 ## 12. Retour arrière

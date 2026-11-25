@@ -19,6 +19,17 @@ def _enabled() -> bool:
     return os.environ.get("LOCAL_RECITERS_ENABLED", "true").lower() != "false"
 
 
+def enabled_ids() -> set[str] | None:
+    """
+    Récitateurs locaux exposés (LOCAL_RECITERS_IDS="benmoussa,hssain").
+    None = tous. Permet de ne publier que ceux dont les MP3 sont déployés.
+    """
+    raw = os.environ.get("LOCAL_RECITERS_IDS", "").strip()
+    if not raw:
+        return None
+    return {part.strip() for part in raw.split(",") if part.strip()}
+
+
 def available_surahs() -> set[int] | None:
     """
     Sourates dont les MP3 sont déployés (LOCAL_RECITERS_SURAHS="100-114" ou
@@ -95,6 +106,9 @@ def get_local_reciter(reciter_id: str | None) -> LocalReciter | None:
     """Retourne le récitateur local correspondant, ou None."""
     if not reciter_id or not _enabled():
         return None
+    ids = enabled_ids()
+    if ids is not None and str(reciter_id) not in ids:
+        return None
     return _BY_ID.get(str(reciter_id))
 
 
@@ -111,6 +125,7 @@ def as_list() -> list[dict]:
     if not _enabled():
         return []
     label = surahs_label(available_surahs())
+    ids = enabled_ids()
     return [
         {
             "id": r.id,
@@ -120,4 +135,5 @@ def as_list() -> list[dict]:
             "local": True,
         }
         for r in LOCAL_RECITERS
+        if ids is None or r.id in ids
     ]
