@@ -29,5 +29,6 @@
 - [ ] Icônes jour/nuit ; alertes météo.
 
 ## Déploiement
+- [ ] Installer la sauvegarde quotidienne de la base sur la VPS (scripts prêts : voir BACKUP.md §1) puis tester la restauration en production.
 - [x] Déployé sur VPS Hostinger : https://salawat.dimatlas.com (voir HANDOFF.md).
 - [ ] Publication Play Store via TWA (partie B).

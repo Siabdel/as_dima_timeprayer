@@ -64,3 +64,6 @@ Voir [TODO.md](TODO.md) (vérifications navigateur, migration prod, limites conn
   ```
 - **Accès :** la clé SSH dédiée au déploiement (`claude-deploy-salawat`) a été **retirée** de la VPS et supprimée en local (2026-11-25). Pour une mise à jour : ajouter une nouvelle clé (hPanel ou API Hostinger), exécuter les commandes ci-dessus, puis la retirer.
 - **À faire :** `docker compose ... exec backend python manage.py createsuperuser` pour l'admin Django.
+
+## Sauvegardes
+Scripts `deploy/backup-db.sh` / `deploy/restore-db.sh` prêts et testés en local ; **pas encore installés sur la VPS**. Procédure complète : [BACKUP.md](BACKUP.md).
