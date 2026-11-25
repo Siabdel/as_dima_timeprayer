@@ -1,0 +1,11 @@
+# =============================================================================
+# Prière & Coran — surcharge pour la VPS Hostinger (nginx hôte + certbot)
+# Usage :
+#   docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build
+# Le frontend n'écoute qu'en local (127.0.0.1:8081) ; c'est le nginx de la machine
+# (deploy/nginx-salawat.conf) qui porte le HTTPS et proxifie vers ce port.
+# =============================================================================
+services:
+  frontend:
+    ports:
+      - "127.0.0.1:8081:80"
