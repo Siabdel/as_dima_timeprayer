@@ -1,6 +1,6 @@
 # Notes d'exploitation — Prière & Coran (Salawat)
 
-Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : menu responsive, Ramadan, rappels, 8 Adhan).
+Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : bibliothèque chargée, menu responsive, Ramadan, rappels, 8 Adhan).
 
 ## Sauvegardes (VPS salawat.dimatlas.com)
 
@@ -30,7 +30,7 @@ Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : menu 
 - La clé `claude-deploy-dimatlas-vps` est **toujours autorisée** sur la VPS (root) : elle ne vient pas de cette session ; à retirer si elle ne sert plus.
 
 ## Bibliothèque (Douâa & Hadiths)
-- La base de production était vide (page « Aucune entrée dans cette catégorie »). `seed_library` lancé le 2026-11-25 : 19 douâas + 19 hadiths. Commande idempotente ; à relancer après toute mise à jour de `apps/library/content.py` (jamais `--reset` sans nécessité).
+- La base de production était vide (page « Aucune entrée dans cette catégorie »). `seed_library` lancé le 2026-11-25 : 19 douâas + 19 hadiths. Commande idempotente ; à relancer après toute mise à jour de `apps/library/content.py` (jamais `--reset` sans nécessité). Étape désormais documentée dans DEPLOY.md (§3.4, §5, §6, check-list) : elle n'est pas automatique, un nouveau déploiement from scratch affichera une page vide tant qu'elle n'est pas lancée.
 
 ## Menu principal
 - 7 liens (Horaires, Coran, Outils, Calendrier, Ramadan, Douâa & Hadiths, Réglages) : la barre ne tenait plus sur une ligne en dessous de ~1200 px et « Douâa & Hadiths » était coupé. Corrigé le 2026-11-25 (`navbar-expand-xl` : burger sous 1200 px). Si un lien est ajouté, revérifier la largeur.
