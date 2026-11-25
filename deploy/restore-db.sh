@@ -11,6 +11,8 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/salawat}"
 COMPOSE_FILES="${COMPOSE_FILES:--f docker-compose.prod.yml -f docker-compose.vps.yml}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/salawat}"
+# Services à arrêter pendant l'import (noms Compose) ; surchargeable.
+STOP_SERVICES="${STOP_SERVICES:-backend worker worker-default beat}"
 FILE="${1:-}"
 
 [ -n "$FILE" ] && [ -f "$FILE" ] || { echo "Usage : $0 <sauvegarde.sql.gz>" >&2; exit 1; }
@@ -30,7 +32,8 @@ echo "1/4 Sauvegarde de sécurité de l'état actuel…"
 BACKUP_DIR="$BACKUP_DIR" APP_DIR="$APP_DIR" COMPOSE_FILES="$COMPOSE_FILES" "$(dirname "$0")/backup-db.sh"
 
 echo "2/4 Arrêt des services qui utilisent la base…"
-$DC stop backend worker worker-default beat >/dev/null 2>&1 || true
+# shellcheck disable=SC2086
+$DC stop $STOP_SERVICES >/dev/null 2>&1 || true
 
 echo "3/4 Recréation du schéma et import…"
 $DC exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"' >/dev/null
@@ -38,4 +41,4 @@ gzip -dc "$FILE" | $DC exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -q -U "$POSTGRE
 
 echo "4/4 Redémarrage…"
 $DC up -d >/dev/null
-echo "Restauration terminée. Vérifiez : curl -s https://salawat.dimatlas.com/health/"
+echo "Restauration terminée."

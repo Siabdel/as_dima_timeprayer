@@ -127,9 +127,59 @@ Il n'a **pas** encore été exécuté sur la VPS de production.
 | `BACKUP_DIR` | `/var/backups/salawat` | destination |
 | `KEEP_DAYS` | `30` | rétention en jours |
 | `ASSUME_YES` | — | `1` = restauration sans confirmation (déconseillé) |
+| `MEDIA_VOLUME` | — | volume Docker de fichiers à archiver aussi (portail) |
+| `STOP_SERVICES` | `backend worker worker-default beat` | services arrêtés pendant la restauration |
 
-## 6. Limites
+## 6. Portail `dimatlas` (portail.dimatlas.com)
 
-- Le portail `dimatlas` (autre projet Docker de la VPS) n'est **pas** couvert par ces scripts.
+Le portail est un **autre projet Docker** de la même VPS (`/home/django/dimatlas-portal`,
+projet Compose `dimatlas`). Il a sa base PostgreSQL **et** un volume de fichiers
+téléversés (`mediafiles`). Deux scripts dédiés réutilisent les mêmes outils :
+
+```bash
+scp deploy/backup-portail.sh deploy/restore-portail.sh root@187.124.184.110:/opt/salawat/deploy/
+```
+
+Sur la VPS :
+
+```bash
+chmod 700 /opt/salawat/deploy/*-portail.sh
+docker volume ls | grep mediafiles          # confirmer le nom : dimatlas_mediafiles
+mkdir -p /var/backups/dimatlas && chmod 700 /var/backups/dimatlas
+
+/opt/salawat/deploy/backup-portail.sh       # essai manuel
+# si le volume se nomme autrement : MEDIA_VOLUME=<nom> /opt/salawat/deploy/backup-portail.sh
+
+cat > /etc/cron.d/dimatlas-backup <<'CRON'
+30 4 * * * root /opt/salawat/deploy/backup-portail.sh >> /var/log/dimatlas-backup.log 2>&1
+CRON
+chmod 644 /etc/cron.d/dimatlas-backup
+```
+
+Fichiers produits dans `/var/backups/dimatlas/` : `db-*.sql.gz` (base), `media-*.tar.gz`
+(fichiers téléversés) et `env-*.bak` (`.env` du portail). Le script ne modifie rien dans
+le portail : il lit la base (`pg_dump`) et le volume en lecture seule.
+
+> **Non testé sur le portail.** Les scripts ont été écrits à partir de son fichier Compose
+> (services `db`, `django`, `celery`, `celery_beat`, volume `mediafiles`) et testés en local
+> sur la base de cette application, y compris l'archive d'un volume Docker. Faites un essai
+> manuel et contrôlez le contenu avant de compter dessus.
+
+## 7. Restaurer le portail
+
+Base (remplace les données actuelles ; sauvegarde de sécurité automatique avant) :
+
+```bash
+sudo /opt/salawat/deploy/restore-portail.sh /var/backups/dimatlas/db-AAAAMMJJ-HHMMSS-mmm.sql.gz
+```
+
+Fichiers téléversés (manuel) : arrêter `django celery celery_beat`, vider le volume
+`dimatlas_mediafiles`, y extraire l'archive `media-….tar.gz` avec un conteneur `alpine`
+(`tar xzf … -C /data`), puis relancer le projet. Faites-le avec prudence : cette étape
+**efface** le contenu actuel du volume.
+
+## 8. Limites
+
+- Le portail est couvert par `backup-portail.sh` (§6), mais cette procédure n'a pas été testée sur lui.
 - Pas de chiffrement des sauvegardes sur la VPS (protégées par les droits `root` uniquement).
 - La restauration interrompt l'application quelques secondes à quelques minutes.

@@ -29,6 +29,6 @@
 - [ ] Icônes jour/nuit ; alertes météo.
 
 ## Déploiement
-- [ ] Installer la sauvegarde quotidienne de la base sur la VPS (scripts prêts : voir BACKUP.md §1) puis tester la restauration en production.
+- [ ] Installer les sauvegardes quotidiennes sur la VPS : Prière & Coran (BACKUP.md §1) et portail dimatlas (BACKUP.md §6), puis tester une restauration.
 - [x] Déployé sur VPS Hostinger : https://salawat.dimatlas.com (voir HANDOFF.md).
 - [ ] Publication Play Store via TWA (partie B).

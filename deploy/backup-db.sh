@@ -14,6 +14,8 @@
 #   COMPOSE_FILES  "-f docker-compose.prod.yml -f docker-compose.vps.yml"
 #   BACKUP_DIR     /var/backups/salawat
 #   KEEP_DAYS      30
+#   MEDIA_VOLUME   (vide) nom d'un volume Docker de fichiers téléversés à archiver
+#                  aussi, ex. dimatlas_mediafiles pour le portail
 # =============================================================================
 set -euo pipefail
 
@@ -56,6 +58,16 @@ mv "$TMP" "$OUT"
 # .env (secrets) : copie privée, un fichier par jour.
 if [ -f "$APP_DIR/.env" ]; then
   cp "$APP_DIR/.env" "$BACKUP_DIR/env-$(date +%Y%m%d).bak"
+fi
+
+# Volume de fichiers téléversés (optionnel) : archive tar.gz du volume Docker.
+if [ -n "${MEDIA_VOLUME:-}" ]; then
+  MEDIA_OUT="$BACKUP_DIR/media-$STAMP.tar.gz"
+  docker run --rm -v "$MEDIA_VOLUME":/data:ro -v "$BACKUP_DIR":/backup alpine \
+    tar czf "/backup/$(basename "$MEDIA_OUT").partial" -C /data .
+  gzip -t "$BACKUP_DIR/$(basename "$MEDIA_OUT").partial"
+  mv "$BACKUP_DIR/$(basename "$MEDIA_OUT").partial" "$MEDIA_OUT"
+  find "$BACKUP_DIR" -name 'media-*.tar.gz' -mtime +"$KEEP_DAYS" -delete
 fi
 
 # Rotation.
