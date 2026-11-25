@@ -18,7 +18,9 @@ from rest_framework.views import APIView
 from apps.accounts.models import UserPreference
 
 from .serializers import PrayerTimesSerializer
-from .services import aladhan, cache as prayer_cache
+from django.core.cache import cache as django_cache
+
+from .services import aladhan, cache as prayer_cache, ramadan as ramadan_service
 
 logger = logging.getLogger(__name__)
 
@@ -219,3 +221,98 @@ class PrayerTimesTodayView(APIView):
         if stale:
             response["Warning"] = '110 - "Response is stale"'
         return response
+
+
+RAMADAN_TTL = 7 * 24 * 3600
+RAMADAN_STALE_TTL = 60 * 24 * 3600
+
+
+def _default_ramadan_year() -> int:
+    """Année hégirienne du Ramadan en cours ou du prochain (si le mois 9 est passé)."""
+    from hijridate import Gregorian
+
+    today = dj_timezone.now().date()
+    h = Gregorian(today.year, today.month, today.day).to_hijri()
+    return h.year + 1 if h.month > aladhan.RAMADAN_MONTH else h.year
+
+
+class RamadanCalendarView(APIView):
+    """
+    GET /api/v1/prayer-times/ramadan/?hijri_year=1448&latitude=&longitude=&method=&madhhab=
+
+    Horaires de chaque jour de Ramadan (imsak, rupture du jeûne = maghrib…)
+    et dates importantes (Nuit du Destin, Aïd…). Coordonnées obligatoires.
+    `hijri_year` est facultatif : Ramadan en cours ou prochain.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        params = request.query_params
+        try:
+            latitude = float(params.get("latitude"))
+            longitude = float(params.get("longitude"))
+        except (TypeError, ValueError):
+            return _error_response(
+                "invalid_params", "Fournissez latitude et longitude numériques.",
+                status.HTTP_400_BAD_REQUEST,
+            )
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            return _error_response("invalid_params", "Coordonnées hors limites.",
+                                   status.HTTP_400_BAD_REQUEST)
+        madhhab = params.get("madhhab", "standard")
+        if madhhab not in VALID_MADHHABS:
+            return _error_response(
+                "invalid_madhhab",
+                f"Le paramètre madhhab doit être l'un de : {', '.join(VALID_MADHHABS)}.",
+                status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            method = int(params.get("method", 3))
+            hijri_year = int(params.get("hijri_year") or _default_ramadan_year())
+        except ValueError:
+            return _error_response(
+                "invalid_params", "method et hijri_year doivent être des entiers.",
+                status.HTTP_400_BAD_REQUEST,
+            )
+        if not (1400 <= hijri_year <= 1500):
+            return _error_response("invalid_params", "hijri_year hors limites (1400-1500).",
+                                   status.HTTP_400_BAD_REQUEST)
+
+        key = (f"ramadan:{hijri_year}:{prayer_cache._round(latitude)}:"
+               f"{prayer_cache._round(longitude)}:{method}:{madhhab}")
+        stale_key = f"ramadan-stale:{key}"
+        data = django_cache.get(key)
+        stale = False
+        if data is None:
+            try:
+                data = aladhan.fetch_ramadan_calendar(
+                    hijri_year=hijri_year, latitude=latitude, longitude=longitude,
+                    method=method, madhhab=madhhab,
+                )
+                django_cache.set(key, data, RAMADAN_TTL)
+                django_cache.set(stale_key, data, RAMADAN_STALE_TTL)
+            except aladhan.AladhanError as exc:
+                data = django_cache.get(stale_key)
+                if data is None:
+                    return _error_response(
+                        "external_api_error",
+                        f"Impossible de récupérer le calendrier de Ramadan : {exc}",
+                        status.HTTP_503_SERVICE_UNAVAILABLE,
+                    )
+                stale = True
+
+        days = data["days"]
+        return Response({
+            "hijri_year": hijri_year,
+            "location": {"latitude": latitude, "longitude": longitude},
+            "method": method,
+            "madhhab": madhhab,
+            "timezone": data.get("timezone", ""),
+            "start_date": days[0]["date"],
+            "end_date": days[-1]["date"],
+            "days_count": len(days),
+            "days": days,
+            "key_dates": ramadan_service.build_key_dates(days),
+            "stale": stale,
+        })

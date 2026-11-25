@@ -28,6 +28,10 @@
 - [ ] Quran Foundation : adapter l'authentification (hôte `oauth2.quran.foundation`, en-têtes `x-auth-token` / `x-client-id`) avant d'y renseigner des identifiants.
 - [ ] Hssain : déployer ses MP3 puis l'ajouter à `LOCAL_RECITERS_IDS` (non exposé en production pour l'instant).
 
+## Ramadan
+- [x] Onglet « Spécial Ramadan » du calendrier : horaires jour par jour (Imsak, rupture), dates clés (Nuit du Destin, Aïd), endpoint `/prayer-times/ramadan/`.
+- [ ] Déployer sur la VPS ; option : rappel de rupture/Imsak par notification, impression/partage du tableau.
+
 ## Météo
 - [ ] Libellé du temps pour les jours suivants (l'API n'expose que celui du moment présent).
 - [ ] Icônes jour/nuit ; alertes météo.

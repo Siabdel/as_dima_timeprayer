@@ -51,4 +51,25 @@ test.describe('Calendrier : onglet France', () => {
     await page.getByRole('tab', { name: /islamique/ }).click();
     await expect(page.getByText(/prochaines f[eê]tes/i)).toBeVisible();
   });
+
+  test('onglet Spécial Ramadan : horaires, imsak, rupture et Nuit du Destin', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('pc_prayer_location', JSON.stringify({
+        location: { latitude: 48.85, longitude: 2.35 }, method: 12, madhhab: 'standard' }));
+    });
+    const days = Array.from({ length: 29 }, (_, i) => ({
+      date: new Date(Date.UTC(2027, 1, 8 + i)).toISOString().slice(0, 10), hijri_day: i + 1,
+      imsak: '06:10', fajr: '06:20', sunrise: '07:40', dhuhr: '13:00', asr: '15:30', maghrib: '18:00', isha: '19:10' }));
+    await page.route('**/prayer-times/ramadan/**', (route) => route.fulfill({ json: {
+      hijri_year: 1448, location: {}, method: 12, madhhab: 'standard', timezone: 'Europe/Paris',
+      start_date: days[0].date, end_date: days[28].date, days_count: 29, days, stale: false,
+      key_dates: [{ id: 'laylat-al-qadr', name: 'Nuit du Destin (Laylat al-Qadr)', name_ar: 'ليلة القدر',
+        date: days[25].date, hijri_day: 27, night: true, description: 'Nuit la plus attendue.', highlight: true }] } }));
+    await page.goto('/calendar');
+    await page.getByRole('tab', { name: 'Spécial Ramadan' }).click();
+    await expect(page.getByRole('heading', { name: /Ramadan 1448/ })).toBeVisible();
+    await expect(page.getByText('Nuit du Destin (Laylat al-Qadr)')).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Rupture' })).toBeVisible();
+    await expect(page.locator('tbody tr')).toHaveCount(29);
+  });
 });

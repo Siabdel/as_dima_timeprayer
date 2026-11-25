@@ -14,10 +14,12 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { getYearEvents, getUpcomingEvents } from '../api/events';
 import FranceCalendar from '../components/FranceCalendar.vue';
+import RamadanCalendar from '../components/RamadanCalendar.vue';
 
 // Onglets : « islamic » (fêtes islamiques + fêtes marocaines) | « france » (grégorien).
 const TABS = [
   { key: 'islamic', label: 'Calendrier islamique et fêtes marocaines' },
+  { key: 'ramadan', label: 'Spécial Ramadan' },
   { key: 'france', label: 'Calendrier grégorien, France' },
 ];
 const tab = ref('islamic');
@@ -187,7 +189,9 @@ const groupedByMonth = computed(() => {
       <p class="text-muted mb-3">
         {{ tab === 'islamic'
           ? 'Fêtes islamiques et jours fériés nationaux (Maroc), par année.'
-          : 'Calendrier grégorien et jours fériés en France, par année.' }}
+          : tab === 'ramadan'
+            ? 'Mois sacré de Ramadan : horaires de prière, Imsak, rupture du jeûne et dates importantes.'
+            : 'Calendrier grégorien et jours fériés en France, par année.' }}
       </p>
 
       <ul class="nav nav-tabs mb-4 pc-cal-tabs" role="tablist" aria-label="Type de calendrier">
@@ -199,6 +203,9 @@ const groupedByMonth = computed(() => {
           </button>
         </li>
       </ul>
+
+      <RamadanCalendar v-if="tab === 'ramadan'" id="cal-panel-ramadan" role="tabpanel"
+                       aria-labelledby="cal-tab-ramadan" />
 
       <FranceCalendar v-if="tab === 'france'" id="cal-panel-france" role="tabpanel"
                       aria-labelledby="cal-tab-france" :initial-year="selectedYear" />

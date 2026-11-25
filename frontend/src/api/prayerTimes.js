@@ -24,3 +24,11 @@ export function getPrayerTimes(params = {}) {
 export function getTodayPrayerTimes(params = {}) {
   return client.get('/prayer-times/today/', { params });
 }
+
+/**
+ * GET /prayer-times/ramadan/ — horaires de chaque jour de Ramadan + dates clés.
+ * @param {Object} params { latitude, longitude, method, madhhab, hijri_year? }
+ */
+export function getRamadanCalendar(params = {}) {
+  return client.get('/prayer-times/ramadan/', { params });
+}
