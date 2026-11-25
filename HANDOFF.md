@@ -48,3 +48,20 @@ Voir [TODO.md](TODO.md) (vérifications navigateur, migration prod, limites conn
 - Manifeste : `id`, `scope`, catégories et raccourcis (Horaires, Coran, Réglages).
 - Le service worker n'est actif qu'en build de production (`npm run build` / image `prod` + nginx), pas avec `npm run dev`.
 - Les récitations locales (`public/quran/`, 816 Mo) ne sont pas pré-cachées ni cachées par le SW.
+
+## Déploiement VPS Hostinger (salawat.dimatlas.com)
+- **Où :** VPS KVM 2 (Debian 13, `187.124.184.110`), projet Compose `dimatimeprayer-prod` dans `/opt/salawat`.
+  Cohabite avec le portail existant (`/home/django/dimatlas-portal`, projet `dimatlas`, 127.0.0.1:8000) — ne pas y toucher.
+- **Réseau :** frontend (nginx conteneur) publié sur `127.0.0.1:8081` (`docker-compose.vps.yml`). Le nginx de l'hôte
+  (`/etc/nginx/sites-available/salawat.dimatlas.com`, modèle : `deploy/nginx-salawat.conf`) porte le HTTPS (certbot, renouvellement auto).
+- **DNS :** enregistrement A `salawat` → IP de la VPS (zone `dimatlas.com`).
+- **Secrets :** `/opt/salawat/.env` (chmod 600, hors dépôt) : SECRET_KEY, mots de passe, clés VAPID générées au déploiement. `LOCAL_RECITERS_ENABLED=false` (pas d'audio Benmoussa).
+- **Mise à jour :**
+  ```bash
+  rsync -az --delete --exclude .git --exclude node_modules --exclude frontend/dist --exclude frontend/public/quran \
+    --exclude frontend/.playwright-browsers --exclude .env -e "ssh -i ~/.ssh/salawat_deploy" ./ root@187.124.184.110:/opt/salawat/
+  ssh -i ~/.ssh/salawat_deploy root@187.124.184.110 'cd /opt/salawat && docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build'
+  ```
+- **Accès :** clé SSH dédiée `~/.ssh/salawat_deploy` (ajoutée à `root` via l'API Hostinger, libellé `claude-deploy-salawat`). À retirer si inutile :
+  `vps_ssh-keys_remove-virtual-machine` ou hPanel → VPS → Clés SSH.
+- **À faire :** `docker compose ... exec backend python manage.py createsuperuser` pour l'admin Django.

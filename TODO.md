@@ -28,5 +28,5 @@
 - [ ] Icônes jour/nuit ; alertes météo.
 
 ## Déploiement
-- [ ] Déploiement VPS Hostinger (DEPLOYMENT.md partie A).
+- [x] Déployé sur VPS Hostinger : https://salawat.dimatlas.com (voir HANDOFF.md).
 - [ ] Publication Play Store via TWA (partie B).
