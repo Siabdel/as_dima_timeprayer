@@ -116,7 +116,7 @@ APP_DIR=$PWD COMPOSE_FILES="-f docker-compose.yml" BACKUP_DIR=/tmp/essai \
 
 Ce scénario a été exécuté sur la base de développement : sauvegarde, ajout d'une table
 témoin, restauration, vérification (table témoin supprimée, 108 comptes intacts).
-Il n'a **pas** encore été exécuté sur la VPS de production.
+Sur la VPS de production, l'installation (scripts, dossier, cron 04:00) a été faite le 2026-11-25 et un premier essai a produit une sauvegarde valide (19 tables, 8 Ko). La **restauration** n'y a pas été testée, et aucune copie hors VPS n'est encore en place.
 
 ## 5. Variables des scripts
 

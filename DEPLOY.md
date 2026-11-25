@@ -269,7 +269,7 @@ si Django propose de contourner la validation.
 
 ## 9. Sauvegardes
 
-Scripts prêts, **à installer sur la VPS** : voir [BACKUP.md](BACKUP.md).
+Prière & Coran : **installé sur la VPS le 2026-11-25** (cron 04:00, essai OK). Portail : scripts prêts, non installés. Voir [BACKUP.md](BACKUP.md).
 
 | Cible | Script | Cron conseillé |
 |---|---|---|
@@ -338,6 +338,6 @@ Puis supprimer l'enregistrement DNS `salawat` (hPanel ou `dns_records_delete`).
 - [x] Benmoussa : sourates 100-114 déployées
 - [x] Clé SSH de déploiement retirée
 - [ ] Compte administrateur Django créé ([§7](#7-compte-administrateur-django))
-- [ ] Sauvegardes installées et copie hors VPS ([§9](#9-sauvegardes))
+- [ ] Sauvegarde Prière & Coran installée ✔ ; reste : portail, copie hors VPS ([§9](#9-sauvegardes))
 - [ ] Notifications d'Adhan testées de bout en bout sur téléphone
 - [ ] Identifiants Quran Foundation renseignés (optionnel)
