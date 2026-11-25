@@ -259,7 +259,7 @@ désactiver l'optimisation de batterie pour l'application.
 - Le **son de l'Adhan** ne se joue que si l'application est ouverte
   (limitation des navigateurs) ; app fermée, l'ami reçoit seulement la notification,
   avec vibration selon le mode choisi.
-- Trois Adhan sont fournis (`frontend/public/adhan/` : Abdul Basit, Alafasy, Minshawi) ;
+- Sept Adhan sont fournis (`frontend/public/adhan/` : Abdul Basit, Alafasy, Minshawi, La Mecque, Médine, Al-Aqsa, Égypte) ;
   « Sonnerie complète » joue Abdul Basit par défaut. Le choix se fait dans **Réglages →
   Alertes et Adhan avancé** (aperçu avec « Tester l'Adhan »).
 - Non testé sur un vrai téléphone à ce jour.

@@ -25,14 +25,21 @@ PREFS_URL = "/api/v1/auth/preferences/"
 # Catalogue (unitaire)
 # ---------------------------------------------------------------------------
 class TestAdhanSoundCatalog:
-    def test_catalogue_contains_three_reciters(self):
-        assert len(adhan_sounds.SOUNDS) == 3
+    def test_catalogue_contains_expected_sounds(self):
+        assert len(adhan_sounds.SOUNDS) == 7
         reciters = {s.reciter for s in adhan_sounds.SOUNDS}
-        assert reciters == {
-            "Abdul Basit Abdus Samad",
-            "Mishary Rashid Alafasy",
-            "Muhammad Siddiq Al-Minshawi",
-        }
+        assert {"Abdul Basit Abdus Samad", "Mishary Rashid Alafasy",
+                "Muhammad Siddiq Al-Minshawi"} <= reciters
+        assert {s.id for s in adhan_sounds.SOUNDS} >= {"makkah", "madinah", "alaqsa", "egypt"}
+
+    def test_every_sound_file_exists(self):
+        from pathlib import Path
+        root = next((p / "frontend" / "public" for p in Path(__file__).resolve().parents
+                     if (p / "frontend" / "public").is_dir()), None)
+        if root is None:
+            pytest.skip("dossier frontend absent (exécution dans le conteneur backend)")
+        missing = [s.url for s in adhan_sounds.SOUNDS if not (root / s.url.lstrip("/")).exists()]
+        assert not missing, missing
 
     def test_ids_are_unique(self):
         ids = [s.id for s in adhan_sounds.SOUNDS]
@@ -60,7 +67,7 @@ class TestAdhanSoundsEndpoint:
         assert resp.status_code == 200
         assert resp.data["default"] == adhan_sounds.DEFAULT_SOUND_ID
         sounds = resp.data["sounds"]
-        assert len(sounds) == 3
+        assert len(sounds) == 7
         for sound in sounds:
             assert set(sound.keys()) == {"id", "name", "reciter", "url"}
             assert sound["url"].startswith("/adhan/")

@@ -10,6 +10,9 @@ Sources (archive.org, item « adhan_202606 » — Adhan by different callers) :
   * Abdul Basit Abdus Samad     — légende égyptienne, adhan complet
   * Mishary Rashid Alafasy      — adhan Fajr (Koweït)
   * Muhammad Siddiq Al-Minshawi — légende égyptienne, adhan complet
+  * La Mecque, Médine, Al-Aqsa (Jérusalem), Égypte — adhan complets (muezzin non
+    précisé par la source : libellés par lieu). L'item archive.org ne mentionne
+    aucune licence : à confirmer avant toute diffusion large.
 
 Les fichiers MP3 sont hébergés par l'application elle-même
 (`frontend/public/adhan/`) et servis depuis la même origine que l'app :
@@ -52,6 +55,30 @@ SOUNDS: list[AdhanSound] = [
         name="Adhan complet",
         reciter="Muhammad Siddiq Al-Minshawi",
         url="/adhan/minshawi.mp3",
+    ),
+    AdhanSound(
+        id="makkah",
+        name="Adhan de la Mecque",
+        reciter="Masjid al-Haram (La Mecque)",
+        url="/adhan/makkah.mp3",
+    ),
+    AdhanSound(
+        id="madinah",
+        name="Adhan de Médine",
+        reciter="Masjid an-Nabawi (Médine)",
+        url="/adhan/madinah.mp3",
+    ),
+    AdhanSound(
+        id="alaqsa",
+        name="Adhan d'Al-Aqsa",
+        reciter="Masjid al-Aqsa (Jérusalem)",
+        url="/adhan/alaqsa.mp3",
+    ),
+    AdhanSound(
+        id="egypt",
+        name="Adhan d'Égypte",
+        reciter="Muezzin égyptien",
+        url="/adhan/egypt.mp3",
     ),
 ]
 
