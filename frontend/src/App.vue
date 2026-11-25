@@ -41,7 +41,7 @@ onMounted(() => {
   <div class="d-flex flex-column min-vh-100">
     <!-- Navigation principale -->
     <nav
-      class="navbar navbar-expand-md navbar-dark bg-pc-green shadow-sm"
+      class="navbar navbar-expand-xl navbar-dark bg-pc-green shadow-sm"
       aria-label="Navigation principale"
     >
       <div class="container">
@@ -91,7 +91,7 @@ onMounted(() => {
           </ul>
 
           <!-- Zone de session -->
-          <ul class="navbar-nav align-items-md-center">
+          <ul class="navbar-nav align-items-xl-center">
             <template v-if="!isAuthenticated">
               <li class="nav-item">
                 <router-link class="nav-link" to="/login">Connexion</router-link>
@@ -102,11 +102,11 @@ onMounted(() => {
             </template>
             <template v-else>
               <li class="nav-item">
-                <span class="navbar-text pc-nav-email me-md-2" :title="auth.user?.email">
+                <span class="navbar-text pc-nav-email me-xl-2" :title="auth.user?.email">
                   {{ auth.user?.email }}
                 </span>
               </li>
-              <li class="nav-item mt-2 mt-md-0">
+              <li class="nav-item mt-2 mt-xl-0">
                 <button class="btn btn-outline-light btn-sm" type="button" @click="handleLogout">
                   Déconnexion
                 </button>
