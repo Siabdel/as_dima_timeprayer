@@ -30,7 +30,8 @@
 
 ## Ramadan
 - [x] Onglet « Spécial Ramadan » du calendrier : horaires jour par jour (Imsak, rupture), dates clés (Nuit du Destin, Aïd), endpoint `/prayer-times/ramadan/`.
-- [ ] Déployer sur la VPS ; option : rappel de rupture/Imsak par notification, impression/partage du tableau.
+- [x] Déployé sur la VPS (2026-11-25).
+- [ ] Option : rappel de rupture/Imsak par notification, impression/partage du tableau.
 
 ## Météo
 - [ ] Libellé du temps pour les jours suivants (l'API n'expose que celui du moment présent).
