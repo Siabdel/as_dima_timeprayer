@@ -1,6 +1,6 @@
 # Notes d'exploitation — Prière & Coran (Salawat)
 
-Remarques de suivi, mises à jour le 2026-11-25.
+Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : Ramadan, rappels, 8 Adhan).
 
 ## Sauvegardes (VPS salawat.dimatlas.com)
 
@@ -15,11 +15,28 @@ Remarques de suivi, mises à jour le 2026-11-25.
 - **Portail `dimatlas` non sauvegardé** : scripts `backup-portail.sh` / `restore-portail.sh` prêts (BACKUP.md §6) mais non installés, car ce projet ne doit pas être touché sans accord explicite. Non testés sur le portail.
 - Pas de chiffrement des sauvegardes sur la VPS (droits `root` uniquement).
 
+## Ramadan (en ligne depuis le 2026-11-25)
+- Entrée de menu **Ramadan** (`/ramadan`) et onglet « Spécial Ramadan » du Calendrier : horaires jour par jour (Imsak, rupture = Maghrib), dates clés (nuit du Destin = soir du 26e jour, nuits impaires, Aïd). Endpoint `/api/v1/prayer-times/ramadan/` (Aladhan `hijriCalendar`, cache 7 jours, copie de secours 60 jours).
+- **Rappels Imsak / rupture** par notification : désactivés par défaut, activés dans Réglages (« Rappels de Ramadan »), seulement pendant le mois hégirien 9, ignorent les heures calmes. Migration `0005_ramadan_reminders`.
+- Non testé sur téléphone. Prochain Ramadan : 8 février 2027 (±1 jour selon la lune).
+
+## Adhan
+- 8 sons en ligne : Abdul Basit (complet et Fajr), Alafasy, Minshawi, La Mecque, Médine, Al-Aqsa, Égypte. « Sonnerie complète » joue Abdul Basit par défaut.
+- Source archive.org « adhan_202606 », **sans licence indiquée** : à confirmer avant une diffusion large. Muezzins des nouveaux fichiers non identifiés.
+- Le son ne se joue que si l'application est ouverte (limite des navigateurs).
+
+## Accès SSH et déploiement
+- Procédure : clé temporaire `claude-deploy-salawat` ajoutée puis retirée à chaque déploiement (DEPLOY.md §10).
+- La clé `claude-deploy-dimatlas-vps` est **toujours autorisée** sur la VPS (root) : elle ne vient pas de cette session ; à retirer si elle ne sert plus.
+
+## Tests
+- Les e2e du Ramadan (onglet, menu) et de l'Adhan passent en local ; test « méthode/madhhab » corrigé (le stockage n'est plus vidé à chaque navigation). Penser à `migrate` sur la base locale après chaque nouvelle migration, sinon les réglages restent en chargement.
+
 ## Autres points ouverts
 - Compte administrateur Django : à créer par l'utilisateur (`createsuperuser`, voir DEPLOY.md).
 - Quran Foundation : adapter l'authentification avant d'y mettre des identifiants.
 - Hssain : MP3 non déployés, donc masqué ; Benmoussa limité aux sourates 100–114 (rien d'autre n'est hébergé ; droits de diffusion et riwaya « Hafs » à vérifier).
-- Notifications push : jamais testées de bout en bout sur un téléphone.
+- Notifications push (Adhan, bip, vibreur, rappels Ramadan) : jamais testées de bout en bout sur un téléphone.
 - CPU à 98 % : cause probable = analyse Monarx, non confirmée.
 - Limites de requêtes : 1500/h anonyme, 5000/h compte (variables `THROTTLE_ANON` / `THROTTLE_USER`).
 
