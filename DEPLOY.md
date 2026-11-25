@@ -168,6 +168,18 @@ curl -s -H "Host: salawat.dimatlas.com" -H "X-Forwarded-Proto: https" http://127
 
 Le backend applique les migrations et `collectstatic` au démarrage.
 
+**Charger le contenu de la bibliothèque (Douâa & Hadiths)** — à faire une fois, sinon la page
+affiche « Aucune entrée dans cette catégorie » (la commande n'est PAS lancée automatiquement) :
+
+```bash
+docker compose -p dimatimeprayer-prod -f docker-compose.prod.yml -f docker-compose.vps.yml \
+  exec -T backend python manage.py seed_library
+# → Douâas : 19 créés … Hadiths : 19 créés …
+```
+
+La commande est idempotente (crée ou met à jour par source/titre, ne supprime rien). Ne jamais
+ajouter `--reset` en production sans nécessité : il vide les tables.
+
 ### 3.5 nginx de l'hôte + certificat
 
 ```bash
@@ -221,6 +233,7 @@ curl -s -o /dev/null -w "%{http_code}\n" $U/sw.js          # 200
 curl -s "$U/api/v1/prayer-times/?city=Casablanca&country=Maroc&method=21" | head -c 150
 curl -s "$U/api/v1/weather/?city=Casablanca" | head -c 150
 curl -s "$U/api/v1/events/france/?year=2026" | head -c 100
+curl -s "$U/api/v1/library/duas/" | head -c 40                        # "count":19 (sinon : seed_library, §3.4)
 curl -s "$U/api/v1/quran/audio/chapter/112/?reciter_id=benmoussa"     # /quran/benmoussa/112.mp3
 curl -s -w " [%{http_code}]\n" "$U/api/v1/quran/audio/chapter/2/?reciter_id=benmoussa"   # 404 attendu
 curl -sI $U/quran/benmoussa/112.mp3 | grep -i -E "^HTTP|content-type|accept-ranges"
@@ -242,7 +255,8 @@ activer les notifications (Réglages) et envoyer la notification de test.
    ```
 
 4. Refaire les contrôles du §5. Les migrations s'appliquent au redémarrage du backend.
-5. **Retirer la clé SSH.**
+5. Si `apps/library/content.py` a changé : relancer `seed_library` (§3.4, idempotent).
+6. **Retirer la clé SSH.**
 
 Les utilisateurs de la PWA reçoivent la nouvelle version à leur prochaine ouverture
 (service worker avec `skipWaiting`).
@@ -336,6 +350,7 @@ Puis supprimer l'enregistrement DNS `salawat` (hPanel ou `dns_records_delete`).
 - [x] Stack Docker lancée (`dimatimeprayer-prod`), `/health/` OK
 - [x] nginx de l'hôte + certificat Let's Encrypt, HTTP → HTTPS
 - [x] Benmoussa : sourates 100-114 déployées
+- [x] Bibliothèque chargée (`seed_library`, 19 douâas + 19 hadiths) le 2026-11-25
 - [x] Clé SSH de déploiement retirée
 - [ ] Compte administrateur Django créé ([§7](#7-compte-administrateur-django))
 - [ ] Sauvegarde Prière & Coran installée ✔ ; reste : portail, copie hors VPS ([§9](#9-sauvegardes))
