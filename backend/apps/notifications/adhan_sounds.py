@@ -57,6 +57,12 @@ SOUNDS: list[AdhanSound] = [
         url="/adhan/minshawi.mp3",
     ),
     AdhanSound(
+        id="fajr-abdul-basit",
+        name="Adhan Fajr",
+        reciter="Abdul Basit Abdus Samad",
+        url="/adhan/fajr-abdul-basit.mp3",
+    ),
+    AdhanSound(
         id="makkah",
         name="Adhan de la Mecque",
         reciter="Masjid al-Haram (La Mecque)",

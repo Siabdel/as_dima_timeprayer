@@ -26,7 +26,7 @@ PREFS_URL = "/api/v1/auth/preferences/"
 # ---------------------------------------------------------------------------
 class TestAdhanSoundCatalog:
     def test_catalogue_contains_expected_sounds(self):
-        assert len(adhan_sounds.SOUNDS) == 7
+        assert len(adhan_sounds.SOUNDS) == 8
         reciters = {s.reciter for s in adhan_sounds.SOUNDS}
         assert {"Abdul Basit Abdus Samad", "Mishary Rashid Alafasy",
                 "Muhammad Siddiq Al-Minshawi"} <= reciters
@@ -67,7 +67,7 @@ class TestAdhanSoundsEndpoint:
         assert resp.status_code == 200
         assert resp.data["default"] == adhan_sounds.DEFAULT_SOUND_ID
         sounds = resp.data["sounds"]
-        assert len(sounds) == 7
+        assert len(sounds) == 8
         for sound in sounds:
             assert set(sound.keys()) == {"id", "name", "reciter", "url"}
             assert sound["url"].startswith("/adhan/")
