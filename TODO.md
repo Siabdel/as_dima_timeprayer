@@ -7,6 +7,16 @@
 - [ ] Rappel avant l'Adhan (`send_prayer_reminder`) : vérifier la fenêtre de scan (5 min) en conditions réelles.
 - [ ] Lancer les tests E2E Playwright (`frontend/e2e`) ; ajouter des scénarios pour le suivi et les nouveaux réglages.
 
+## Coran : statuts, favoris, phonétique (déployé 2026-11-26)
+- [x] Tag de statut par sourate (lecture et Hifz) + filtre sur l'écran Coran.
+- [x] Étoile « Favori » sur les récitateurs (Son de l'Adhan, Audio et récitation) ; favoris triés en tête à l'ouverture de la page.
+- [x] Phonétique sous le texte arabe + interrupteurs Traduction / Phonétique.
+- [x] Page d'architecture : `docs/architecture.html` (lien dans le README).
+- [ ] Statuts et favoris sont dans le `localStorage` : non synchronisés entre appareils. Les passer côté compte demande un champ d'API et une migration.
+- [ ] Phonétique : reconstruite depuis la translittération mot à mot de Quran.com ; qualité à relire sur quelques sourates, et vérifier sur téléphone.
+- [ ] Tester le tag de statut et les étoiles sur un vrai téléphone (le menu déroulant de statut est compact sur petit écran).
+- [ ] Tests e2e à ajouter : statut de sourate, favoris (Adhan et Coran), bascule phonétique.
+
 ## Migration / données
 - [x] Migrations `accounts/0004_preferences_settings` et `0005_ramadan_reminders` appliquées en production (2026-11-25).
 - [ ] Utilisateurs ayant choisi « Maroc » avant la correction (valeur 14 = Russie) : leur faire re-sélectionner la méthode 21, ou migrer 14 → 21.
@@ -47,6 +57,7 @@
 - [ ] Icônes jour/nuit ; alertes météo.
 
 ## Déploiement
+- [x] Déploiement via `django@dimatlas.com` (DEPLOY.md mis à jour) ; clé temporaire `claude-deploy-salawat` à retirer de la VPS et de la machine locale après chaque déploiement (confirmer qu'elle l'est).
 - [ ] Clé SSH `claude-deploy-dimatlas-vps` encore autorisée sur la VPS (accès root) : à retirer si inutile (non ajoutée par cette session, décision de l'utilisateur).
 - [ ] Guide de notifications pour les amis : dans PARTAGER.md §8.1 ; non validé sur téléphone.
 - [x] Sauvegarde quotidienne Prière & Coran installée sur la VPS (2026-11-25, cron 04:00, essai OK).

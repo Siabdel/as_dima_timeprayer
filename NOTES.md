@@ -25,6 +25,16 @@ Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : bibli
 - Source archive.org « adhan_202606 », **sans licence indiquée** : à confirmer avant une diffusion large. Muezzins des nouveaux fichiers non identifiés.
 - Le son ne se joue que si l'application est ouverte (limite des navigateurs).
 
+## Coran : statuts, favoris, phonétique (2026-11-26)
+- **Statuts de sourate** (À lire, En cours, Lu, À relire / Favori, En apprentissage, Mémorisé, À réviser) et **récitateurs favoris** : store Pinia `readingStatus` (`frontend/src/stores/readingStatus.js`), persistés dans le `localStorage` (`pc_surah_status`, `pc_fav_reciters`). Aucun changement d'API : non synchronisé entre appareils. Les favoris du Coran sont préfixés `quran:` pour ne pas se mêler à ceux des sons d'Adhan.
+- **Tri des favoris figé au chargement** : un tri en direct déplaçait les boutons radio au clic et faisait changer le récitateur sélectionné. Comportement voulu : le favori remonte en tête à la prochaine ouverture de la page, pas au clic.
+- **Phonétique** : construite côté client depuis `words[].transliteration` (Quran.com, `words=true`), marqueur de fin de verset exclu. Activer la phonétique charge donc les mots de chaque verset (requête plus lourde). Interrupteurs Traduction / Phonétique mémorisés (`pc_show_translation`, `pc_show_phonetic`).
+- Ancienne version servie par la PWA : après un déploiement, un rechargement forcé ou deux ouvertures de l'app sont nécessaires pour voir les changements.
+
+## Documentation
+- `docs/architecture.html` : page autonome (Vue 3 via cdnjs) sur la stack, la VPS, les conteneurs et le périmètre fonctionnel. Doit être mise à jour si l'architecture change.
+- Commandes de déploiement : `django@dimatlas.com` (au lieu de `root@IP`) dans DEPLOY.md, HANDOFF.md, BACKUP.md, TODO.md. `DEPLOYMENT.md` (installation initiale d'une VPS neuve) garde `root`.
+
 ## Accès SSH et déploiement
 - Procédure : clé temporaire `claude-deploy-salawat` ajoutée puis retirée à chaque déploiement (DEPLOY.md §10).
 - La clé `claude-deploy-dimatlas-vps` est **toujours autorisée** sur la VPS (root) : elle ne vient pas de cette session ; à retirer si elle ne sert plus.
