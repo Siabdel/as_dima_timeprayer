@@ -1,0 +1,423 @@
+<title>Architecture Salawat</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.27/vue.global.prod.min.js"></script>
+<style>
+/* Layout: bandeau titre + onglets collants ; contenu en grille Bootstrap-like (sous-ensemble intégré) ; schéma SVG interactif dans l'onglet Architecture. */
+:root {
+  --bg: #f4f7f6;
+  --surface: #ffffff;
+  --fg: #16302d;
+  --muted: #5a6f6c;
+  --line: #d5e0de;
+  --brand: #14746f;
+  --brand-soft: #dff0ee;
+  --gold: #8a6508;
+  --gold-soft: #f6ecce;
+  --ext: #7a8890;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1b1a; --surface: #152624; --fg: #e3efed; --muted: #93aaa6; --line: #284341;
+    --brand: #4fc3bb; --brand-soft: #173a38; --gold: #e9c46a; --gold-soft: #3a3217; --ext: #8d9da5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1b1a; --surface: #152624; --fg: #e3efed; --muted: #93aaa6; --line: #284341;
+  --brand: #4fc3bb; --brand-soft: #173a38; --gold: #e9c46a; --gold-soft: #3a3217; --ext: #8d9da5;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+[v-cloak] { display: none; }
+.container { max-width: 1120px; margin: 0 auto; }
+.row { display: flex; flex-wrap: wrap; gap: 16px; }
+.col-4 { flex: 1 1 calc(33.333% - 16px); min-width: min(100%, 260px); }
+.col-6 { flex: 1 1 calc(50% - 16px); min-width: min(100%, 300px); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 600; margin-bottom: 4px; }
+h3 { font-size: 1.05rem; font-weight: 600; }
+p { margin: 0; }
+code { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+
+header.top { padding-block: 28px 18px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; }
+header.top > div { min-width: 0; }
+header.top p { max-width: 62ch; margin-top: 8px; color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--brand-soft); color: var(--brand); border: 1px solid transparent; white-space: nowrap; }
+.badge.gold { background: var(--gold-soft); color: var(--gold); }
+.badge.line { background: transparent; border-color: var(--line); color: var(--muted); }
+.theme-btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+
+nav.tabs {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 8px; border-bottom: 1px solid var(--line); margin-bottom: 24px;
+}
+nav.tabs button {
+  flex: 0 0 auto; border: 1px solid transparent; background: transparent; color: var(--muted); font: inherit; font-weight: 500;
+  padding: 8px 16px; border-radius: 8px; cursor: pointer;
+}
+nav.tabs button.active { background: var(--brand); color: var(--bg); }
+nav.tabs button:not(.active):hover { background: var(--brand-soft); color: var(--brand); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 24px; }
+.section-head { margin-bottom: 14px; }
+.section-head p { color: var(--muted); max-width: 70ch; }
+
+.diagram-wrap { overflow-x: auto; }
+svg.diagram { width: 100%; min-width: 760px; height: auto; display: block; }
+svg .node rect { fill: var(--surface); stroke: var(--brand); stroke-width: 1.5; }
+svg .node.ext rect { stroke: var(--ext); stroke-dasharray: 5 4; }
+svg .node.edge-n rect { fill: var(--brand-soft); }
+svg .node.sel rect { stroke: var(--gold); stroke-width: 3; stroke-dasharray: none; }
+svg .node { cursor: pointer; }
+svg .node text { fill: var(--fg); font-family: var(--font-body); font-size: 13px; }
+svg .node .sub { fill: var(--muted); font-size: 11px; font-family: var(--font-mono); }
+svg .group { fill: none; stroke: var(--brand); stroke-width: 1.5; stroke-dasharray: 2 5; }
+svg .group.ext { stroke: var(--ext); }
+svg .group-label { fill: var(--brand); font-weight: 600; font-size: 12px; letter-spacing: .05em; font-family: var(--font-body); }
+svg .group-label.ext { fill: var(--ext); }
+svg .link { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+svg .link.ext { stroke: var(--ext); stroke-dasharray: 5 4; }
+svg .lbl { fill: var(--muted); font-size: 11px; font-family: var(--font-mono); }
+.detail { margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: var(--brand-soft); border: 1px solid var(--line); }
+.detail h3 { margin-bottom: 4px; }
+.hint { font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 12px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.name { font-family: var(--font-mono); font-weight: 500; color: var(--brand); white-space: nowrap; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; height: 100%; min-width: 0; }
+.card ul { margin: 10px 0 0; padding-left: 18px; }
+.card li { margin-bottom: 4px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.flow .step { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.flow .arrow { color: var(--muted); }
+.filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.filter button { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.filter button.active { background: var(--brand); color: var(--bg); border-color: var(--brand); }
+footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { nav.tabs button { transition: background .15s; } }
+</style>
+
+<div id="app" v-cloak class="container">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Architecture technique · périmètre fonctionnel</div>
+      <h1>Salawat · Prière &amp; Coran</h1>
+      <p>Application web installable (PWA), sans publicité : horaires de prière, rappels d'Adhan, lecture et écoute du Coran, calendriers et outils. Hébergée sur une VPS Hostinger, en conteneurs Docker.</p>
+    </div>
+    <div class="facts">
+      <span class="badge">Vue 3 + Django</span>
+      <span class="badge">7 conteneurs</span>
+      <span class="badge gold">salawat.dimatlas.com</span>
+      <button class="theme-btn" type="button" @click="toggleTheme" id="theme-toggle">{{ themeLabel }}</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Sections">
+    <button v-for="t in tabs" :key="t.id" :class="{active: tab === t.id}" :aria-current="tab === t.id ? 'page' : undefined" type="button" @click="go(t.id)">{{ t.label }}</button>
+  </nav>
+
+  <section v-if="tab === 'architecture'" class="stack">
+    <div class="panel">
+      <div class="section-head">
+        <h2>Du navigateur à la base de données</h2>
+        <p>Une requête HTTPS arrive sur le nginx de la VPS, qui la route par nom de domaine. Salawat tourne dans son propre projet Docker Compose, isolé du portail existant.</p>
+      </div>
+      <div class="diagram-wrap">
+        <svg class="diagram" viewBox="0 0 900 520" role="img" aria-label="Schéma d'architecture : Internet, nginx de la VPS, projet Docker Compose avec frontend, backend, PostgreSQL, Redis, Celery, et API externes">
+          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+
+          <rect class="group" x="250" y="168" width="632" height="340" rx="12"/>
+          <text class="group-label" x="266" y="190">PROJET COMPOSE · dimatimeprayer-prod</text>
+          <rect class="group ext" x="14" y="320" width="204" height="188" rx="12"/>
+          <text class="group-label ext" x="28" y="342">APIS EXTERNES</text>
+
+          <path class="link" marker-end="url(#ar)" d="M450 52 V80"/>
+          <path class="link" marker-end="url(#ar)" d="M340 130 L150 168"/>
+          <path class="link" marker-end="url(#ar)" d="M400 130 L380 215"/>
+          <text class="lbl" x="392" y="160">127.0.0.1:8081</text>
+          <path class="link" marker-end="url(#ar)" d="M480 250 H560"/>
+          <text class="lbl" x="484" y="242">/api/</text>
+          <path class="link" marker-end="url(#ar)" d="M600 285 L380 345"/>
+          <path class="link" marker-end="url(#ar)" d="M660 285 L540 345"/>
+          <path class="link" marker-end="url(#ar)" d="M700 318 L590 360"/>
+          <path class="link ext" marker-end="url(#ar)" d="M218 440 C240 440 240 470 262 470 H540"/>
+          <text class="lbl" x="300" y="462">appels sortants (backend, workers)</text>
+
+          <g v-for="n in nodes" :key="n.id" class="node" :class="[n.kind, {sel: sel === n.id}]" tabindex="0" role="button" :aria-label="n.title" :aria-pressed="sel === n.id" @click="sel = n.id" @keydown.enter.prevent="sel = n.id" @keydown.space.prevent="sel = n.id">
+            <rect :x="n.x" :y="n.y" :width="n.w" :height="n.h" rx="8"/>
+            <text :x="n.x + 12" :y="n.sub ? n.y + 22 : n.y + n.h / 2 + 5" font-weight="600">{{ n.title }}</text>
+            <text v-if="n.sub" class="sub" :x="n.x + 12" :y="n.y + 40">{{ n.sub }}</text>
+          </g>
+        </svg>
+      </div>
+      <p class="hint">Cliquez sur un bloc du schéma pour voir son rôle.</p>
+      <div class="detail" aria-live="polite">
+        <h3>{{ current.title }}</h3>
+        <p>{{ current.text }}</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head"><h2>Parcours d'une requête</h2></div>
+      <div class="flow">
+        <span class="step">Navigateur / PWA</span><span class="arrow">→</span>
+        <span class="step">nginx hôte (TLS)</span><span class="arrow">→</span>
+        <span class="step">nginx frontend :8081</span><span class="arrow">→</span>
+        <span class="step">gunicorn · Django</span><span class="arrow">→</span>
+        <span class="step">Redis (cache) · PostgreSQL</span>
+      </div>
+      <p class="muted" style="margin-top:14px">Les horaires, la météo et les versets sont mis en cache dans Redis pour limiter les appels aux API externes. Les rappels d'Adhan sont planifiés par Celery beat, puis envoyés en Web Push par le worker des notifications.</p>
+    </div>
+  </section>
+
+  <section v-if="tab === 'docker'" class="stack">
+    <div class="panel">
+      <div class="section-head">
+        <h2>Services Docker</h2>
+        <p>Deux fichiers Compose se superposent : <code>docker-compose.prod.yml</code> décrit la stack, <code>docker-compose.vps.yml</code> ajoute ce qui est propre à cette VPS (frontend publié uniquement sur 127.0.0.1:8081).</p>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Service</th><th>Image / build</th><th>Rôle</th><th>Volume</th></tr></thead>
+          <tbody>
+            <tr v-for="s in services" :key="s.name">
+              <td class="name">{{ s.name }}</td><td><code>{{ s.image }}</code></td><td>{{ s.role }}</td><td>{{ s.vol }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-6"><div class="card">
+        <h3>Isolation</h3>
+        <ul>
+          <li>Projet Compose <code>dimatimeprayer-prod</code> : réseau, volumes et conteneurs propres.</li>
+          <li>Le portail <code>dimatlas</code> (projet voisin, port 8000) n'est jamais touché par un déploiement.</li>
+          <li>Seul le frontend est publié, en local : <code>127.0.0.1:8081</code>.</li>
+        </ul>
+      </div></div>
+      <div class="col-6"><div class="card">
+        <h3>Fiabilité</h3>
+        <ul>
+          <li>Healthchecks sur PostgreSQL et Redis ; le backend démarre quand les deux sont sains.</li>
+          <li>Redis en mode <code>appendonly</code> ; volumes nommés pour la base, Redis et les statiques.</li>
+          <li>Scripts de sauvegarde et de restauration PostgreSQL dans <code>deploy/</code>.</li>
+        </ul>
+      </div></div>
+    </div>
+  </section>
+
+  <section v-if="tab === 'stack'" class="stack">
+    <div class="row">
+      <div class="col-4" v-for="g in stack" :key="g.title"><div class="card">
+        <div class="eyebrow">{{ g.eyebrow }}</div>
+        <h3>{{ g.title }}</h3>
+        <div class="pills"><span v-for="t in g.items" :key="t" class="badge" :class="g.cls">{{ t }}</span></div>
+        <p class="muted" style="margin-top:12px">{{ g.note }}</p>
+      </div></div>
+    </div>
+    <div class="panel">
+      <div class="section-head"><h2>Applications Django</h2><p>Un domaine fonctionnel par application, exposé sous <code>/api/v1/</code>.</p></div>
+      <div class="tbl"><table>
+        <thead><tr><th>App</th><th>Responsabilité</th></tr></thead>
+        <tbody><tr v-for="a in apps" :key="a.n"><td class="name">{{ a.n }}</td><td>{{ a.d }}</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section v-if="tab === 'perimetre'" class="stack">
+    <div class="panel">
+      <div class="section-head"><h2>Périmètre fonctionnel</h2><p>Écrans de l'application, regroupés par domaine. Les accès sans compte et avec compte sont distingués.</p></div>
+      <div class="filter" role="group" aria-label="Filtrer par accès">
+        <button v-for="f in filters" :key="f.id" :class="{active: filter === f.id}" type="button" @click="filter = f.id">{{ f.label }}</button>
+      </div>
+      <div class="row">
+        <div class="col-4" v-for="m in shownModules" :key="m.title"><div class="card">
+          <div class="eyebrow">{{ m.route }}</div>
+          <h3>{{ m.title }}</h3>
+          <ul><li v-for="i in m.items" :key="i">{{ i }}</li></ul>
+          <div class="pills">
+            <span class="badge line">{{ m.access }}</span>
+            <span v-if="m.fresh" class="badge gold">Nouveau</span>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="section-head"><h2>Sources de données externes</h2></div>
+      <div class="tbl"><table>
+        <thead><tr><th>Source</th><th>Usage</th></tr></thead>
+        <tbody><tr v-for="e in externals" :key="e.n"><td class="name">{{ e.n }}</td><td>{{ e.d }}</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section v-if="tab === 'deploiement'" class="stack">
+    <div class="panel">
+      <div class="section-head"><h2>Mise à jour en production</h2><p>Accès SSH temporaire par clé dédiée, retirée à la fin. Le fichier <code>.env</code>, l'audio et la base ne sont jamais écrasés.</p></div>
+      <div class="flow">
+        <span class="step">1 · Clé SSH temporaire</span><span class="arrow">→</span>
+        <span class="step">2 · rsync du code</span><span class="arrow">→</span>
+        <span class="step">3 · docker compose up -d --build</span><span class="arrow">→</span>
+        <span class="step">4 · Contrôles HTTP</span><span class="arrow">→</span>
+        <span class="step">5 · Retrait de la clé</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-6"><div class="card">
+        <h3>Ce qui est reconstruit</h3>
+        <ul>
+          <li>Le frontend Vue est compilé par Vite dans l'image Docker, puis servi par nginx.</li>
+          <li>Les migrations Django s'appliquent au redémarrage du backend.</li>
+          <li>Les utilisateurs de la PWA reçoivent la nouvelle version à leur prochaine ouverture.</li>
+        </ul>
+      </div></div>
+      <div class="col-6"><div class="card">
+        <h3>Contrôles après déploiement</h3>
+        <ul>
+          <li>Réponse 200 sur le site et sur l'API des sourates.</li>
+          <li>Le portail voisin répond comme avant.</li>
+          <li>Endpoint <code>/health/</code> du backend.</li>
+        </ul>
+      </div></div>
+    </div>
+  </section>
+
+  <footer>Établi à partir du dépôt du projet : fichiers Compose, <code>requirements</code>, <code>package.json</code> et routeur Vue.</footer>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
+
+createApp({
+  setup() {
+    const tabs = [
+      { id: 'architecture', label: 'Architecture' },
+      { id: 'docker', label: 'Docker & VPS' },
+      { id: 'stack', label: 'Stack technique' },
+      { id: 'perimetre', label: 'Périmètre fonctionnel' },
+      { id: 'deploiement', label: 'Déploiement' },
+    ];
+    const ids = tabs.map((t) => t.id);
+    const fromHash = () => { const h = location.hash.replace('#', ''); return ids.includes(h) ? h : 'architecture'; };
+    const tab = ref(fromHash());
+    const onHash = () => { tab.value = fromHash(); };
+    onMounted(() => window.addEventListener('hashchange', onHash));
+    onBeforeUnmount(() => window.removeEventListener('hashchange', onHash));
+    function go(id) { tab.value = id; try { history.replaceState(null, '', '#' + id); } catch (e) {} }
+
+    const theme = ref('auto');
+    const themeLabel = computed(() => theme.value === 'dark' ? 'Thème sombre' : theme.value === 'light' ? 'Thème clair' : 'Thème auto');
+    function toggleTheme() {
+      const next = { auto: 'dark', dark: 'light', light: 'auto' }[theme.value];
+      theme.value = next;
+      if (next === 'auto') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', next);
+    }
+
+    const nodes = [
+      { id: 'internet', x: 330, y: 10, w: 240, h: 42, title: 'Internet', sub: 'HTTPS · navigateur / PWA', kind: 'ext',
+        text: "Les utilisateurs accèdent à salawat.dimatlas.com depuis un navigateur ou l'application installée (PWA). Tout le trafic passe en HTTPS." },
+      { id: 'nginx', x: 270, y: 80, w: 360, h: 50, title: 'nginx de la VPS', sub: ':80 / :443 · certbot', kind: 'edge-n',
+        text: "Le nginx de l'hôte termine le TLS (certificats Let's Encrypt renouvelés automatiquement) et route par nom de domaine : le site existant, le portail, et Salawat vers 127.0.0.1:8081." },
+      { id: 'site', x: 14, y: 168, w: 204, h: 44, title: 'dimatlas.com', sub: 'site existant', kind: 'ext',
+        text: "Site existant de la VPS. Il n'est pas touché par les déploiements de Salawat." },
+      { id: 'portail', x: 14, y: 226, w: 204, h: 50, title: 'portail.dimatlas.com', sub: '127.0.0.1:8000', kind: 'ext',
+        text: "Portail en production dans un projet Docker distinct (« dimatlas »). Règle d'or : ne jamais le modifier lors d'un déploiement de Salawat." },
+      { id: 'frontend', x: 280, y: 215, w: 200, h: 70, title: 'frontend', sub: 'nginx · SPA Vue + PWA', kind: '',
+        text: "Conteneur nginx qui sert l'application Vue compilée (SPA + service worker) et relaie /api/, /admin/ et /health/ vers le backend. Seul service publié sur la machine, en local sur le port 8081." },
+      { id: 'backend', x: 560, y: 215, w: 300, h: 70, title: 'backend', sub: 'Django + DRF · gunicorn 4×4', kind: '',
+        text: "API REST Django (Django REST Framework, JWT). Gunicorn avec 4 workers et 4 threads chacun. Il expose /api/v1/ pour les horaires, le Coran, les outils, la bibliothèque, les notifications et les comptes." },
+      { id: 'db', x: 280, y: 345, w: 160, h: 60, title: 'PostgreSQL 16', sub: 'volume postgres_data', kind: '',
+        text: "Base relationnelle : comptes, préférences, abonnements Web Push, bibliothèque Douâa et Hadiths, progression de lecture." },
+      { id: 'redis', x: 460, y: 345, w: 160, h: 60, title: 'Redis 7', sub: 'appendonly · cache', kind: '',
+        text: "Cache des réponses (horaires, versets, météo) et broker des tâches Celery. Persistance AOF activée." },
+      { id: 'worker', x: 640, y: 318, w: 105, h: 56, title: 'worker', sub: '-Q notifications', kind: '',
+        text: "Worker Celery dédié à la file « notifications » (4 processus) : envoi des Web Push d'Adhan." },
+      { id: 'workerd', x: 755, y: 318, w: 105, h: 56, title: 'worker-default', sub: '-Q default', kind: '',
+        text: "Worker Celery de la file par défaut (4 processus) : tâches de fond générales." },
+      { id: 'beat', x: 640, y: 386, w: 220, h: 46, title: 'beat', sub: 'planificateur Celery', kind: '',
+        text: "Planificateur périodique : déclenche les tâches récurrentes, dont les rappels de prière." },
+      { id: 'ext1', x: 28, y: 354, w: 176, h: 34, title: 'Aladhan', sub: '', kind: 'ext', text: "API publique des horaires de prière et du calendrier hégirien. Appelée par le backend, résultats mis en cache dans Redis." },
+      { id: 'ext2', x: 28, y: 396, w: 176, h: 34, title: 'Quran.com API v4', sub: '', kind: 'ext', text: "Texte du Coran, traductions, audio, mots isolés avec translittération, horodatages de récitation." },
+      { id: 'ext3', x: 28, y: 438, w: 176, h: 34, title: 'Open-Meteo', sub: '', kind: 'ext', text: "Météo de la ville sous les horaires : température, précipitations, vent, prévisions sur 8 jours. Cache de 15 minutes." },
+      { id: 'ext4', x: 28, y: 470, w: 176, h: 30, title: 'Web Push (VAPID)', sub: '', kind: 'ext', text: "Services de push des navigateurs. Le worker y envoie les notifications d'Adhan via pywebpush." },
+    ];
+    const sel = ref('frontend');
+    const current = computed(() => nodes.find((n) => n.id === sel.value) || nodes[0]);
+
+    const services = [
+      { name: 'db', image: 'postgres:16-alpine', role: 'Base de données principale', vol: 'postgres_data' },
+      { name: 'redis', image: 'redis:7-alpine', role: 'Cache et broker Celery (appendonly)', vol: 'redis_data' },
+      { name: 'backend', image: 'build backend/Dockerfile', role: 'Django + DRF servis par gunicorn (4 workers, 4 threads)', vol: 'static_data' },
+      { name: 'worker', image: 'build backend/Dockerfile', role: 'Celery, file notifications (concurrence 4)', vol: '—' },
+      { name: 'worker-default', image: 'build backend/Dockerfile', role: 'Celery, file default (concurrence 4)', vol: '—' },
+      { name: 'beat', image: 'build backend/Dockerfile', role: 'Celery beat : tâches planifiées', vol: '—' },
+      { name: 'frontend', image: 'build frontend/Dockerfile', role: 'nginx : SPA Vue + PWA, proxy /api /admin /health, statiques', vol: 'static_data (lecture seule)' },
+    ];
+
+    const stack = [
+      { eyebrow: 'Client', title: 'Frontend', cls: '', items: ['Vue 3.4', 'Pinia', 'Vue Router 4', 'Bootstrap 5.3', 'Bootstrap Icons', 'Axios', 'Vite 5', 'vite-plugin-pwa'], note: "SPA installable avec service worker Workbox : l'interface et le cache audio fonctionnent hors ligne." },
+      { eyebrow: 'Serveur', title: 'Backend', cls: '', items: ['Django 5', 'DRF 3.15', 'SimpleJWT', 'django-cors-headers', 'Celery 5.4', 'django-redis', 'psycopg 3', 'pywebpush', 'hijridate'], note: 'API REST versionnée sous /api/v1/, authentification JWT, tâches asynchrones pour les notifications.' },
+      { eyebrow: 'Infrastructure', title: 'Hébergement', cls: 'gold', items: ['Hostinger KVM 2', 'Debian 13', 'Docker Compose', 'nginx (hôte)', 'certbot', 'PostgreSQL 16', 'Redis 7'], note: "Une VPS partagée avec d'autres projets : isolation par projet Compose et par domaine." },
+    ];
+    const apps = [
+      { n: 'accounts', d: 'Comptes, authentification JWT, préférences (fuseau, langue, calcul, alertes, rappels de Ramadan).' },
+      { n: 'prayer_times', d: "Horaires de prière via Aladhan, méthodes de calcul, cache, calendrier du Ramadan." },
+      { n: 'quran', d: 'Sourates, versets, traductions FR/EN, audio, mot à mot, récitateurs locaux, progression de lecture.' },
+      { n: 'notifications', d: "Abonnements Web Push, catalogue des sons d'Adhan, tâches d'envoi planifiées." },
+      { n: 'locations', d: 'Recherche de villes, position, fuseaux.' },
+      { n: 'tools', d: 'Qibla, conversion hégirienne, utilitaires.' },
+      { n: 'events', d: 'Fêtes islamiques et marocaines, jours fériés français (fêtes mobiles calculées depuis Pâques).' },
+      { n: 'library', d: 'Bibliothèque de douâas et de hadiths.' },
+      { n: 'weather', d: 'Météo de la ville (Open-Meteo), cache de 15 minutes.' },
+    ];
+
+    const modules = [
+      { route: '/', title: 'Horaires de prière', access: 'Sans compte', anon: true, items: ['Horaires par ville ou coordonnées', 'Compte à rebours vers la prochaine prière', 'Méthodes de calcul par organisme', 'Météo et prévisions 8 jours'] },
+      { route: '/quran', title: 'Liste des sourates', access: 'Sans compte', anon: true, fresh: true, items: ['114 sourates, recherche par nom ou numéro', 'Tag de statut : lecture et mémorisation (Hifz)', 'Filtre par statut', 'Reprise de la lecture (compte)'] },
+      { route: '/quran/:n', title: 'Lecture et écoute', access: 'Sans compte', anon: true, fresh: true, items: ['Texte arabe, traductions FR et EN', "Phonétique pour ceux qui ne lisent pas l'arabe", 'Interrupteurs Traduction / Phonétique', 'Lecture mot à mot, suivi de la récitation'] },
+      { route: '/settings', title: 'Réglages', access: 'Compte pour une partie', anon: false, fresh: true, items: ['Position, calcul des horaires, fuseau, langue', "Son de l'Adhan avec aperçu et récitateurs favoris", 'Audio et récitation : récitateur par défaut, favoris', 'Notifications push, cache audio'] },
+      { route: '/calendar', title: 'Calendrier', access: 'Sans compte', anon: true, items: ['Fêtes islamiques et marocaines', 'Jours fériés en France, grille des 12 mois'] },
+      { route: '/ramadan', title: 'Ramadan', access: 'Sans compte', anon: true, items: ['Calendrier du Ramadan', 'Rappels configurables (compte)'] },
+      { route: '/tools', title: 'Outils', access: 'Sans compte', anon: true, items: ['Boussole Qibla', 'Compteur de tasbih'] },
+      { route: '/library', title: 'Bibliothèque', access: 'Sans compte', anon: true, items: ['Douâas', 'Hadiths'] },
+      { route: '/login · /register', title: 'Compte', access: 'Compte', anon: false, items: ['Inscription et connexion JWT', 'Préférences synchronisées', 'Progression de lecture du Coran'] },
+    ];
+    const filter = ref('all');
+    const filters = [{ id: 'all', label: 'Tout' }, { id: 'anon', label: 'Sans compte' }, { id: 'account', label: 'Compte requis' }, { id: 'fresh', label: 'Nouveautés' }];
+    const shownModules = computed(() => modules.filter((m) =>
+      filter.value === 'all' ? true : filter.value === 'anon' ? m.anon : filter.value === 'account' ? !m.anon : !!m.fresh));
+    const externals = [
+      { n: 'Aladhan', d: 'Horaires de prière et conversion hégirienne.' },
+      { n: 'Quran.com API v4', d: 'Texte, traductions, audio, mots isolés, translittération, horodatages.' },
+      { n: 'Open-Meteo', d: 'Météo et prévisions.' },
+      { n: 'Web Push / VAPID', d: "Envoi des notifications d'Adhan aux navigateurs." },
+      { n: 'Audio local', d: "Récitateurs hébergés par l'application : cheikh Benmoussa et cheikh Hssain (114 sourates chacun)." },
+    ];
+
+    return { tabs, tab, go, themeLabel, toggleTheme, nodes, sel, current, services, stack, apps, filter, filters, shownModules, externals };
+  },
+}).mount('#app');
+</script>
