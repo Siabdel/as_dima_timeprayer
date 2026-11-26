@@ -19,6 +19,7 @@ import { useAuthStore } from '../stores/auth';
 import { usePreferencesStore } from '../stores/preferences';
 import { getSubscriptionStatus } from '../api/tools';
 import { getAdhanSounds } from '../api/adhanSounds';
+import { useReadingStatusStore } from '../stores/readingStatus';
 import SettingsPreferencesPanel from '../components/SettingsPreferencesPanel.vue';
 import LocationSettingsCard from '../components/LocationSettingsCard.vue';
 import CalcSettingsCard from '../components/CalcSettingsCard.vue';
@@ -133,6 +134,14 @@ async function saveNotifications() {
 // ---------------------------------------------------------------------------
 /** Catalogue des sons (GET /notifications/adhan-sounds/). */
 const adhanSounds = ref([]);
+const favorites = useReadingStatusStore();
+/** Catalogue trié : récitateurs favoris d'abord (ordre d'origine conservé). */
+const sortedAdhanSounds = computed(() =>
+  [...adhanSounds.value].sort(
+    (a, b) =>
+      Number(favorites.isFavoriteReciter(b.id)) - Number(favorites.isFavoriteReciter(a.id))
+  )
+);
 /** Son sélectionné (id) — miroir de notifForm.adhan_sound_id. */
 const adhanSoundId = ref(null);
 const adhanLoading = ref(false);
@@ -538,7 +547,7 @@ function handleLogout() {
           <!-- Liste des sons du catalogue (radio + aperçu) -->
           <div class="list-group list-group-flush">
             <div
-              v-for="sound in adhanSounds"
+              v-for="sound in sortedAdhanSounds"
               :key="sound.id"
               class="list-group-item px-0 d-flex align-items-center gap-3"
             >
@@ -556,9 +565,25 @@ function handleLogout() {
                 class="form-check-label flex-grow-1"
                 :for="`adhan-sound-${sound.id}`"
               >
-                <span class="d-block fw-semibold">{{ sound.reciter }}</span>
+                <span class="d-block fw-semibold">
+                  {{ sound.reciter }}
+                  <span v-if="favorites.isFavoriteReciter(sound.id)" class="badge text-bg-warning ms-1">Favori</span>
+                </span>
                 <span class="d-block small text-muted">{{ sound.name }}</span>
               </label>
+              <button
+                type="button"
+                class="btn btn-sm btn-link text-warning-emphasis"
+                :aria-pressed="favorites.isFavoriteReciter(sound.id)"
+                :aria-label="favorites.isFavoriteReciter(sound.id) ? `Retirer ${sound.reciter} des favoris` : `Ajouter ${sound.reciter} aux favoris`"
+                @click="favorites.toggleFavoriteReciter(sound.id)"
+              >
+                <i
+                  class="bi"
+                  :class="favorites.isFavoriteReciter(sound.id) ? 'bi-star-fill' : 'bi-star'"
+                  aria-hidden="true"
+                ></i>
+              </button>
               <button
                 type="button"
                 class="btn btn-sm"

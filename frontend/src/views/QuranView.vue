@@ -11,11 +11,14 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { getSurahs, getProgress } from '../api/quran';
 import { useAuthStore } from '../stores/auth';
+import { SURAH_STATUSES, useReadingStatusStore } from '../stores/readingStatus';
 import SurahList from '../components/SurahList.vue';
 import { useQuranPlayerStore } from '../stores/quranPlayer';
 
 const auth = useAuthStore();
 const player = useQuranPlayerStore();
+const readingStatus = useReadingStatusStore();
+const statusFilter = ref('');
 
 // --- Liste des sourates -----------------------------------------------------
 const surahs = ref([]);
@@ -60,13 +63,16 @@ function normalize(text) {
 
 const filteredSurahs = computed(() => {
   const query = debouncedQuery.value;
-  if (!query) return surahs.value;
+  const base = statusFilter.value
+    ? surahs.value.filter((s) => readingStatus.statusOf(s.number) === statusFilter.value)
+    : surahs.value;
+  if (!query) return base;
   const normalized = normalize(query);
   // Recherche par numéro (préfixe) ou par nom (translittéré ou arabe).
   if (/^\d+$/.test(query)) {
-    return surahs.value.filter((s) => String(s.number).startsWith(query));
+    return base.filter((s) => String(s.number).startsWith(query));
   }
-  return surahs.value.filter(
+  return base.filter(
     (s) =>
       normalize(s.name_transliterated).includes(normalized) ||
       String(s.name_arabic || '').includes(query)
@@ -147,6 +153,13 @@ onMounted(() => {
           autocomplete="off"
         />
       </div>
+      <div class="mt-2">
+        <label class="visually-hidden" for="pc-status-filter">Filtrer par statut</label>
+        <select id="pc-status-filter" v-model="statusFilter" class="form-select form-select-sm w-auto">
+          <option value="">Tous les statuts</option>
+          <option v-for="s in SURAH_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
+        </select>
+      </div>
       <!-- Annonce polie du nombre de résultats (lecteurs d'écran) -->
       <p v-if="debouncedQuery" class="form-text mb-0" aria-live="polite">
         {{ filteredSurahs.length }} sourate{{ filteredSurahs.length > 1 ? 's' : '' }}
@@ -168,7 +181,7 @@ onMounted(() => {
     </div>
 
     <div v-else-if="!filteredSurahs.length" class="alert alert-light" role="status">
-      Aucune sourate ne correspond à « {{ debouncedQuery }} ».
+      Aucune sourate ne correspond à votre recherche ou au statut choisi.
     </div>
 
     <!-- Liste des sourates -->

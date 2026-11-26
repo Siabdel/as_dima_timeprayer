@@ -56,6 +56,26 @@ const selectedTranslations = ref([
   usePreferencesStore().preference?.language === 'en' ? 'en' : 'fr',
 ]);
 
+// Affichage : traduction et phonétique masquables indépendamment (persisté).
+function readFlag(key, fallback) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw === null ? fallback : raw === '1';
+  } catch {
+    return fallback;
+  }
+}
+const showTranslation = ref(readFlag('pc_show_translation', true));
+const showPhonetic = ref(readFlag('pc_show_phonetic', true));
+watch([showTranslation, showPhonetic], () => {
+  try {
+    window.localStorage.setItem('pc_show_translation', showTranslation.value ? '1' : '0');
+    window.localStorage.setItem('pc_show_phonetic', showPhonetic.value ? '1' : '0');
+  } catch {
+    // Stockage indisponible : sans conséquence.
+  }
+});
+
 const verses = ref([]);
 const isLoading = ref(false);
 const loadError = ref('');
@@ -76,6 +96,9 @@ const followMode = computed({
 
 /** Le suivi mot par mot a besoin du tableau `words` pour rendre les mots. */
 const showWords = computed(() => wordByWord.value || followMode.value === 'word');
+
+/** La phonétique est reconstruite à partir des mots (`words=true`). */
+const needWords = computed(() => showWords.value || showPhonetic.value);
 
 /** Mot actif transmis à VerseList : séquence mot à mot OU suivi de récitation. */
 const activeWords = computed(() => {
@@ -113,7 +136,7 @@ async function loadVerses() {
     const { data } = await getVerses(
       surahNumber.value,
       selectedTranslations.value,
-      { words: showWords.value }
+      { words: needWords.value }
     );
     verses.value = Array.isArray(data) ? data : [];
   } catch {
@@ -128,7 +151,7 @@ async function loadVerses() {
 watch(selectedTranslations, loadVerses, { deep: true });
 
 // Bascule du mode mot à mot → refetch avec (ou sans) `words=true`.
-watch(showWords, loadVerses);
+watch(needWords, loadVerses);
 
 // Navigation sourate → sourate (retour puis nouvelle sourate) : rechargement.
 watch(
@@ -301,6 +324,16 @@ onMounted(() => {
             </label>
           </div>
         </div>
+        <div class="d-flex flex-wrap gap-3 mt-2">
+          <div class="form-check form-switch">
+            <input id="pc-show-translation" v-model="showTranslation" class="form-check-input" type="checkbox" role="switch" />
+            <label class="form-check-label" for="pc-show-translation">Traduction</label>
+          </div>
+          <div class="form-check form-switch">
+            <input id="pc-show-phonetic" v-model="showPhonetic" class="form-check-input" type="checkbox" role="switch" />
+            <label class="form-check-label" for="pc-show-phonetic">Phonétique (pour ne pas lire l'arabe)</label>
+          </div>
+        </div>
         <p class="form-text mb-1">
           <strong>Suivi de la récitation</strong> : pendant « Écouter la sourate »,
           le verset (ou le mot) récité est surligné et la page défile
@@ -361,7 +394,8 @@ onMounted(() => {
         v-else
         :verses="verses"
         :surah="surahNumber"
-        :show-translations="selectedTranslations.length > 0"
+        :show-translations="showTranslation && selectedTranslations.length > 0"
+        :show-phonetic="showPhonetic"
         :word-by-word="showWords"
         :active-word-index="activeWords"
         :follow-ayah="followedAyah"

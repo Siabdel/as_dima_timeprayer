@@ -9,6 +9,7 @@
 // - La sourate en cours de lecture est mise en évidence (bordure dorée).
 // ===========================================================================
 import { useRouter } from 'vue-router';
+import { SURAH_STATUSES, useReadingStatusStore } from '../stores/readingStatus';
 
 const props = defineProps({
   /** Liste des sourates (réponse de GET /quran/surahs/). */
@@ -18,6 +19,12 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const readingStatus = useReadingStatusStore();
+const statusGroups = [...new Set(SURAH_STATUSES.map((s) => s.group))];
+
+function statusTone(surah) {
+  return SURAH_STATUSES.find((s) => s.value === readingStatus.statusOf(surah.number))?.tone ?? 'none';
+}
 
 /** Libellé français du lieu de révélation. */
 function revelationLabel(place) {
@@ -92,6 +99,28 @@ function open(surah) {
           title="Sourate en cours de lecture"
         ></i>
 
+        <!-- Tag de statut (lecture / mémorisation), sans déclencher la navigation -->
+        <select
+          class="form-select form-select-sm pc-status-tag"
+          :class="`pc-status-${statusTone(surah)}`"
+          :value="readingStatus.statusOf(surah.number)"
+          :aria-label="`Statut de la sourate ${surah.name_transliterated}`"
+          @click.stop
+          @keydown.stop
+          @change="readingStatus.setStatus(surah.number, $event.target.value)"
+        >
+          <option value="">Statut…</option>
+          <optgroup v-for="g in statusGroups" :key="g" :label="g">
+            <option
+              v-for="s in SURAH_STATUSES.filter((x) => x.group === g)"
+              :key="s.value"
+              :value="s.value"
+            >
+              {{ s.label }}
+            </option>
+          </optgroup>
+        </select>
+
         <!-- Nom arabe : Amiri, RTL, aligné à droite -->
         <span class="arabic-text pc-surah-arabic" lang="ar" dir="rtl">
           {{ surah.name_arabic }}
@@ -156,4 +185,21 @@ function open(surah) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Tag de statut : select compact coloré */
+.pc-status-tag {
+  width: auto;
+  max-width: 9.5rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.pc-status-none { color: #5b6665; }
+.pc-status-secondary { background-color: #e9ecef; color: #343a40; }
+.pc-status-warning { background-color: #fff3cd; color: #664d03; }
+.pc-status-success { background-color: #d1e7dd; color: #0a3622; }
+.pc-status-info { background-color: #cff4fc; color: #055160; }
+.pc-status-primary { background-color: #cfe2ff; color: #052c65; }
+.pc-status-danger { background-color: #f8d7da; color: #58151c; }
 </style>

@@ -24,6 +24,8 @@ const props = defineProps({
   surah: { type: Number, required: true },
   /** Bascule GLOBALE des traductions (checkbox FR / EN de la page). */
   showTranslations: { type: Boolean, default: true },
+  /** Affiche la translittération phonétique sous le texte arabe. */
+  showPhonetic: { type: Boolean, default: false },
   /** Mode « mot à mot » : rend WordByWordReader quand le verset a `words`. */
   wordByWord: { type: Boolean, default: false },
   /** Index du mot en cours par verset : { [ayahNumber]: index }. */
@@ -60,6 +62,15 @@ function codeLabel(code) {
   const map = { french: 'FR', english: 'EN', fr: 'FR', en: 'EN' };
   const key = String(code || '').toLowerCase();
   return map[key] ?? String(code || '??').slice(0, 2).toUpperCase();
+}
+
+/** Phonétique du verset : translittération des mots (marqueur de fin exclu). */
+function phonetic(verse) {
+  if (!Array.isArray(verse.words)) return '';
+  return verse.words
+    .filter((w) => !w.is_end && w.transliteration)
+    .map((w) => w.transliteration)
+    .join(' ');
 }
 
 // --- Mode « mot à mot » ------------------------------------------------------
@@ -258,6 +269,16 @@ onBeforeUnmount(() => {
                 {{ verse.text_uthmani }}
               </p>
 
+              <!-- Phonétique (translittération latine) -->
+              <p
+                v-if="showPhonetic && phonetic(verse)"
+                class="pc-phonetic fst-italic mb-2"
+                lang="ar-Latn"
+              >
+                <span class="badge pc-translation-badge me-1" aria-hidden="true">PH</span>
+                {{ phonetic(verse) }}
+              </p>
+
               <!-- Traductions repliables (badges FR / EN) -->
               <div
                 v-if="translationsOpen(verse.ayah_number) && hasTranslations(verse)"
@@ -405,5 +426,9 @@ onBeforeUnmount(() => {
 
 .min-w-0 {
   min-width: 0;
+}
+.pc-phonetic {
+  color: #3f4b4a;
+  line-height: 1.7;
 }
 </style>

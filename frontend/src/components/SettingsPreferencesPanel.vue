@@ -11,6 +11,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { usePreferencesStore } from '../stores/preferences';
 import { useQuranPlayerStore } from '../stores/quranPlayer';
+import { useReadingStatusStore } from '../stores/readingStatus';
 import { getAdhanSounds } from '../api/adhanSounds';
 import { getChapterAudio } from '../api/quran';
 import { playAdhanSound, stopAdhanSound, playBeep } from '../services/adhanAudio';
@@ -157,11 +158,21 @@ const styleFilter = ref('all');
 const styles = computed(() => [
   ...new Set(reciters.value.map((r) => r.style).filter(Boolean)),
 ]);
-const shownReciters = computed(() =>
-  styleFilter.value === 'all'
-    ? reciters.value
-    : reciters.value.filter((r) => r.style === styleFilter.value)
-);
+const favorites = useReadingStatusStore();
+// Clé préfixée : les ids du Coran ne doivent pas se mêler à ceux des sons d'Adhan.
+const favKey = (r) => `quran:${r.id}`;
+const shownReciters = computed(() => {
+  const list =
+    styleFilter.value === 'all'
+      ? reciters.value
+      : reciters.value.filter((r) => r.style === styleFilter.value);
+  // Favoris d'abord (tri stable : ordre d'origine conservé sinon).
+  return [...list].sort(
+    (a, b) =>
+      Number(favorites.isFavoriteReciter(favKey(b))) -
+      Number(favorites.isFavoriteReciter(favKey(a)))
+  );
+});
 let previewAudio = null;
 const previewingReciter = ref(null);
 const previewError = ref('');
@@ -437,9 +448,19 @@ onMounted(async () => {
                    name="default-reciter" :checked="player.reciterId === r.id"
                    @change="chooseReciter(r.id)" />
             <label class="form-check-label flex-grow-1" :for="`reciter-${r.id}`">
-              <span class="d-block fw-semibold">{{ r.name }}</span>
+              <span class="d-block fw-semibold">
+                {{ r.name }}
+                <span v-if="favorites.isFavoriteReciter(favKey(r))" class="badge text-bg-warning ms-1">Favori</span>
+              </span>
               <span v-if="r.style" class="d-block small text-muted">{{ r.style }}</span>
             </label>
+            <button type="button" class="btn btn-sm btn-link text-warning-emphasis"
+                    :aria-pressed="favorites.isFavoriteReciter(favKey(r))"
+                    :aria-label="favorites.isFavoriteReciter(favKey(r)) ? `Retirer ${r.name} des favoris` : `Ajouter ${r.name} aux favoris`"
+                    @click="favorites.toggleFavoriteReciter(favKey(r))">
+              <i class="bi" :class="favorites.isFavoriteReciter(favKey(r)) ? 'bi-star-fill' : 'bi-star'"
+                 aria-hidden="true"></i>
+            </button>
             <button type="button" class="btn btn-sm"
                     :class="previewingReciter === r.id ? 'btn-outline-secondary' : 'btn-outline-pc'"
                     :aria-label="`Aperçu de ${r.name}`" @click="previewReciter(r)">
