@@ -135,11 +135,14 @@ async function saveNotifications() {
 /** Catalogue des sons (GET /notifications/adhan-sounds/). */
 const adhanSounds = ref([]);
 const favorites = useReadingStatusStore();
-/** Catalogue trié : récitateurs favoris d'abord (ordre d'origine conservé). */
+/** Favoris au chargement : ordre figé pour ne pas déplacer les radios au clic. */
+const favSnapshot = ref([]);
+/** Catalogue trié : favoris (état au chargement) d'abord, ordre d'origine sinon. */
 const sortedAdhanSounds = computed(() =>
   [...adhanSounds.value].sort(
     (a, b) =>
-      Number(favorites.isFavoriteReciter(b.id)) - Number(favorites.isFavoriteReciter(a.id))
+      Number(favSnapshot.value.includes(String(b.id))) -
+      Number(favSnapshot.value.includes(String(a.id)))
   )
 );
 /** Son sélectionné (id) — miroir de notifForm.adhan_sound_id. */
@@ -155,6 +158,7 @@ async function loadAdhanSounds() {
   adhanError.value = null;
   try {
     const response = await getAdhanSounds();
+    favSnapshot.value = [...favorites.favoriteReciters];
     adhanSounds.value = response.data?.sounds ?? [];
     const defaultValue = response.data?.default ?? null;
     // Choix courant : préférence sauvegardée, sinon défaut du catalogue.

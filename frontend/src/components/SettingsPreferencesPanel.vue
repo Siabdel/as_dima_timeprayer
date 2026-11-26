@@ -161,6 +161,8 @@ const styles = computed(() => [
 const favorites = useReadingStatusStore();
 // Clé préfixée : les ids du Coran ne doivent pas se mêler à ceux des sons d'Adhan.
 const favKey = (r) => `quran:${r.id}`;
+// Ordre figé au chargement : un clic sur l'étoile ne doit pas déplacer les radios.
+const favSnapshot = ref([]);
 const shownReciters = computed(() => {
   const list =
     styleFilter.value === 'all'
@@ -169,8 +171,8 @@ const shownReciters = computed(() => {
   // Favoris d'abord (tri stable : ordre d'origine conservé sinon).
   return [...list].sort(
     (a, b) =>
-      Number(favorites.isFavoriteReciter(favKey(b))) -
-      Number(favorites.isFavoriteReciter(favKey(a)))
+      Number(favSnapshot.value.includes(favKey(b))) -
+      Number(favSnapshot.value.includes(favKey(a)))
   );
 });
 let previewAudio = null;
@@ -257,7 +259,10 @@ onMounted(async () => {
       .then((r) => (adhanSounds.value = r.data?.sounds ?? []))
       .catch(() => {});
   }
-  player.fetchReciters().then((list) => (reciters.value = list));
+  player.fetchReciters().then((list) => {
+    favSnapshot.value = [...favorites.favoriteReciters];
+    reciters.value = list;
+  });
   refreshCache();
 });
 </script>
