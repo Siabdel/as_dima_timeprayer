@@ -59,7 +59,9 @@ Internet ──HTTPS──▶ nginx (hôte, ports 80/443, certbot)
 ## 2. Prérequis et identifiants
 
 - Connecteur **Hostinger** autorisé dans Claude Code (OAuth) : lecture des VPS, DNS, gestion des clés SSH.
-- Accès SSH `root` à la VPS par **clé dédiée et temporaire** (voir [§10](#10-gestion-de-laccès-ssh)).
+- Accès SSH **`django`** à la VPS par **clé dédiée et temporaire** (voir [§10](#10-gestion-de-laccès-ssh)).
+  Prérequis côté VPS, une fois : `django` est dans le groupe `docker` (`usermod -aG docker django`),
+  possède `/opt/salawat` (`chown -R django: /opt/salawat`) et a `~/.ssh/authorized_keys` en `600`.
 - Docker 29 + Compose v5 déjà installés sur la VPS ; `rsync` disponible.
 - Pas de `.env` dans le dépôt : il est généré pour le déploiement (§3.3).
 
@@ -85,13 +87,13 @@ dig +short salawat.dimatlas.com @1.1.1.1      # → 187.124.184.110
 KEY=~/.ssh/salawat_deploy
 SSHO="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes"
 
-$SSHO root@187.124.184.110 'mkdir -p /opt/salawat'
+$SSHO django@dimatlas.com 'mkdir -p /opt/salawat'
 rsync -az --delete -e "$SSHO" \
   --exclude .git --exclude node_modules --exclude frontend/dist --exclude frontend/dev-dist \
   --exclude frontend/public/quran --exclude frontend/.playwright-browsers \
   --exclude '__pycache__' --exclude '.pytest_cache' --exclude .env \
   --exclude backend/db.sqlite3 --exclude frontend/test-results --exclude frontend/playwright-report \
-  ./ root@187.124.184.110:/opt/salawat/
+  ./ django@dimatlas.com:/opt/salawat/
 ```
 
 Taille attendue : **~16 Mo**. Si c'est plus, une exclusion manque (voir [§11](#11-pièges-rencontrés-et-solutions)).
@@ -148,8 +150,8 @@ TZ=Europe/Paris
 
 ```bash
 chmod 600 prod.env
-scp -i $KEY -o IdentitiesOnly=yes prod.env root@187.124.184.110:/opt/salawat/.env
-ssh -i $KEY root@187.124.184.110 'chmod 600 /opt/salawat/.env'
+scp -i $KEY -o IdentitiesOnly=yes prod.env django@dimatlas.com:/opt/salawat/.env
+ssh -i $KEY django@dimatlas.com 'chmod 600 /opt/salawat/.env'
 shred -u prod.env                              # supprimer la copie locale
 ```
 
@@ -158,7 +160,7 @@ shred -u prod.env                              # supprimer la copie locale
 ### 3.4 Construire et lancer la stack
 
 ```bash
-ssh -i $KEY root@187.124.184.110
+ssh -i $KEY django@dimatlas.com
 cd /opt/salawat
 docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build
 docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml ps
@@ -198,9 +200,9 @@ redirection. Les autres sites (`dimatlas.com`, `portail`) ne sont pas modifiés.
 Les 114 mp3 pèsent ~816 Mo ; seules les **sourates 100 à 114** (15 fichiers, 3,9 Mo) sont déployées.
 
 ```bash
-$SSHO root@187.124.184.110 'mkdir -p /opt/salawat/frontend/public/quran/benmoussa'
+$SSHO django@dimatlas.com 'mkdir -p /opt/salawat/frontend/public/quran/benmoussa'
 rsync -az -e "$SSHO" frontend/public/quran/benmoussa/1{0,1}?.mp3 \
-  root@187.124.184.110:/opt/salawat/frontend/public/quran/benmoussa/
+  django@dimatlas.com:/opt/salawat/frontend/public/quran/benmoussa/
 ```
 
 Dans `/opt/salawat/.env` :
@@ -250,7 +252,7 @@ activer les notifications (Réglages) et envoyer la notification de test.
 3. Reconstruire et relancer :
 
    ```bash
-   ssh -i $KEY root@187.124.184.110 \
+   ssh -i $KEY django@dimatlas.com \
      'cd /opt/salawat && docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build'
    ```
 
@@ -304,11 +306,11 @@ ssh-keygen -t ed25519 -N "" -C "claude-deploy-salawat" -f ~/.ssh/salawat_deploy
 | Étape | Opération Hostinger |
 |---|---|
 | Lister les clés | `vps_ssh-keys_list-virtual-machine` (`virtualMachineId: 1599443`) |
-| Ajouter | `vps_ssh-keys_add-virtual-machine` (`keys: ["<clé publique>"]`) — clé ajoutée à `root` |
+| Ajouter | `vps_ssh-keys_add-virtual-machine` (`keys: ["<clé publique>"]`) — l'API ajoute la clé à `root` uniquement : la copier ensuite dans `/home/django/.ssh/authorized_keys` (et l'en retirer en fin de déploiement) |
 | Retirer | `vps_ssh-keys_remove-virtual-machine` (même clé) |
 
 Après usage : retirer la clé côté Hostinger, puis en local
-`shred -u ~/.ssh/salawat_deploy; rm ~/.ssh/salawat_deploy.pub; ssh-keygen -R 187.124.184.110`.
+`shred -u ~/.ssh/salawat_deploy; rm ~/.ssh/salawat_deploy.pub; ssh-keygen -R dimatlas.com`.
 Vérifier que l'accès est coupé (`Permission denied (publickey,password)`).
 Le 2026-11-25, la clé a été retirée à la fin du déploiement.
 

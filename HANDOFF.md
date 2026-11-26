@@ -60,8 +60,8 @@ Procédure complète et pièges : [DEPLOY.md](DEPLOY.md). Résumé :
 - **Mise à jour :**
   ```bash
   rsync -az --delete --exclude .git --exclude node_modules --exclude frontend/dist --exclude frontend/public/quran \
-    --exclude frontend/.playwright-browsers --exclude .env -e "ssh -i ~/.ssh/salawat_deploy" ./ root@187.124.184.110:/opt/salawat/
-  ssh -i ~/.ssh/salawat_deploy root@187.124.184.110 'cd /opt/salawat && docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build'
+    --exclude frontend/.playwright-browsers --exclude .env -e "ssh -i ~/.ssh/salawat_deploy" ./ django@dimatlas.com:/opt/salawat/
+  ssh -i ~/.ssh/salawat_deploy django@dimatlas.com 'cd /opt/salawat && docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build'
   ```
 - **Accès :** la clé SSH dédiée au déploiement (`claude-deploy-salawat`) a été **retirée** de la VPS et supprimée en local (2026-11-25). Pour une mise à jour : ajouter une nouvelle clé (hPanel ou API Hostinger), exécuter les commandes ci-dessus, puis la retirer.
 - **À faire :** `docker compose ... exec backend python manage.py createsuperuser` pour l'admin Django.

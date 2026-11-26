@@ -20,7 +20,7 @@ avec rotation, vérification d'intégrité et restauration guidée.
 Depuis votre ordinateur, copiez les scripts (le dossier du projet est à jour dans ce dépôt) :
 
 ```bash
-scp deploy/backup-db.sh deploy/restore-db.sh root@187.124.184.110:/opt/salawat/deploy/
+scp deploy/backup-db.sh deploy/restore-db.sh django@dimatlas.com:/opt/salawat/deploy/
 ```
 
 Sur la VPS :
@@ -68,7 +68,7 @@ ou de la VPS. Deux moyens simples :
 - **Depuis votre ordinateur** (à lancer régulièrement ou par cron local) :
 
   ```bash
-  rsync -az root@187.124.184.110:/var/backups/salawat/ ~/sauvegardes/salawat/
+  rsync -az django@dimatlas.com:/var/backups/salawat/ ~/sauvegardes/salawat/
   ```
 
 - **Instantanés Hostinger** : activez les sauvegardes automatiques / snapshots de la VPS
@@ -137,7 +137,7 @@ projet Compose `dimatlas`). Il a sa base PostgreSQL **et** un volume de fichiers
 téléversés (`mediafiles`). Deux scripts dédiés réutilisent les mêmes outils :
 
 ```bash
-scp deploy/backup-portail.sh deploy/restore-portail.sh root@187.124.184.110:/opt/salawat/deploy/
+scp deploy/backup-portail.sh deploy/restore-portail.sh django@dimatlas.com:/opt/salawat/deploy/
 ```
 
 Sur la VPS :

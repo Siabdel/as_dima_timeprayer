@@ -51,7 +51,7 @@
 - [ ] Guide de notifications pour les amis : dans PARTAGER.md §8.1 ; non validé sur téléphone.
 - [x] Sauvegarde quotidienne Prière & Coran installée sur la VPS (2026-11-25, cron 04:00, essai OK).
 - [ ] Test de restauration sur la VPS (`restore-db.sh`) : seulement testé en local.
-- [ ] Copie hors VPS des sauvegardes (`rsync -az root@187.124.184.110:/var/backups/salawat/ ~/sauvegardes/salawat/`, à lancer par l'utilisateur) et/ou snapshots Hostinger (hPanel).
+- [ ] Copie hors VPS des sauvegardes (`rsync -az django@dimatlas.com:/var/backups/salawat/ ~/sauvegardes/salawat/`, à lancer par l'utilisateur) et/ou snapshots Hostinger (hPanel).
 - [ ] Sauvegarde du portail dimatlas (BACKUP.md §6) : scripts prêts, non installés, en attente de l'accord explicite de l'utilisateur (projet à ne pas toucher sinon).
 - [x] Déployé sur VPS Hostinger : https://salawat.dimatlas.com (voir HANDOFF.md).
 - [ ] Publication Play Store via TWA (partie B).
