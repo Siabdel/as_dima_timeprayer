@@ -179,6 +179,19 @@ docker compose -p dimatimeprayer-prod -f docker-compose.prod.yml -f docker-compo
 # → Douâas : 19 créés … Hadiths : 19 créés …
 ```
 
+**Charger le texte du Coran en base (optionnel, branche `dev_texte_QURAN_local`)** — évite les appels
+à Quran.com pour le texte arabe et les traductions fr/en (≈ 3 Mo). Une seule fois, après `migrate` ;
+tant que la base est vide ou incomplète, l'API retombe automatiquement sur Quran.com :
+
+```bash
+docker compose -p dimatimeprayer-prod -f docker-compose.prod.yml -f docker-compose.vps.yml \
+  exec -T backend python manage.py import_quran_text            # 114 sourates, fr + en
+# → une ligne par sourate, puis « Import terminé. Base : {...} »
+```
+
+Idempotente ; `--surah N` (répétable) pour quelques sourates, `--translations fr` pour une langue,
+`--reset` pour tout vider avant. `QURAN_LOCAL_TEXT_ENABLED=false` force le retour à Quran.com.
+
 La commande est idempotente (crée ou met à jour par source/titre, ne supprime rien). Ne jamais
 ajouter `--reset` en production sans nécessité : il vide les tables.
 

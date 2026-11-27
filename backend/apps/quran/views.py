@@ -27,7 +27,7 @@ from .serializers import (
     VerseSerializer,
     VerseWordsSerializer,
 )
-from .services import quran_client
+from .services import local_text, quran_client
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,25 @@ class QuranUnavailableError(Exception):
     """Quran.com indisponible (proxy de l'erreur client vers la couche vue)."""
 
 
+def _surahs():
+    """Sourates : base locale si importée, sinon Quran.com (cache 24 h)."""
+    local = local_text.get_surahs()
+    if local is not None:
+        return local
+    return _cached("quran:surahs", quran_client.fetch_surahs)
+
+
+def _verses(number: int, translations: list[str]):
+    """Versets : base locale si complets (texte + traductions), sinon Quran.com."""
+    local = local_text.get_verses(number, translations)
+    if local is not None:
+        return local
+    return _cached(
+        f"quran:verses:{number}:{','.join(sorted(translations))}",
+        lambda: quran_client.fetch_verses(number, translations),
+    )
+
+
 class SurahListView(APIView):
     """GET /api/v1/quran/surahs/ — liste des 114 sourates."""
 
@@ -63,7 +82,7 @@ class SurahListView(APIView):
 
     def get(self, request):
         try:
-            surahs = _cached("quran:surahs", quran_client.fetch_surahs)
+            surahs = _surahs()
         except QuranUnavailableError as exc:
             return _error_response(
                 "external_api_error", str(exc), status.HTTP_503_SERVICE_UNAVAILABLE
@@ -96,10 +115,7 @@ class SurahDetailView(APIView):
                     f"quran:chapter-words:{number}",
                     lambda: quran_client.fetch_chapter_words(number),
                 )
-                verses = _cached(
-                    f"quran:verses:{number}:{','.join(sorted(translations))}",
-                    lambda: quran_client.fetch_verses(number, translations),
-                )
+                verses = _verses(number, translations)
             except QuranUnavailableError as exc:
                 return _error_response(
                     "external_api_error", str(exc), status.HTTP_503_SERVICE_UNAVAILABLE
@@ -118,10 +134,7 @@ class SurahDetailView(APIView):
             return Response(payload)
 
         try:
-            verses = _cached(
-                f"quran:verses:{number}:{','.join(sorted(translations))}",
-                lambda: quran_client.fetch_verses(number, translations),
-            )
+            verses = _verses(number, translations)
         except QuranUnavailableError as exc:
             return _error_response(
                 "external_api_error", str(exc), status.HTTP_503_SERVICE_UNAVAILABLE
