@@ -185,7 +185,7 @@ tant que la base est vide ou incomplète, l'API retombe automatiquement sur Qura
 
 ```bash
 docker compose -p dimatimeprayer-prod -f docker-compose.prod.yml -f docker-compose.vps.yml \
-  exec -T backend python manage.py import_quran_text            # 114 sourates, fr + en
+  exec -T backend python manage.py import_quran_text            # 114 sourates, fr + en + ar (tafsir Muyassar)
 # → une ligne par sourate, puis « Import terminé. Base : {...} »
 ```
 

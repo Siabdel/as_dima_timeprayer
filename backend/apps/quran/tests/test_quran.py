@@ -85,6 +85,53 @@ class TestNormalization:
         assert [r["id"] for r in reciters["verse"]] == [126]
 
 
+class TestArabicTafsir:
+    """L'arabe n'est pas une traduction Quran.com : il vient du tafsir al-Muyassar (id 16)."""
+
+    @responses.activate
+    def test_fetch_verses_merges_arabic_tafsir(self):
+        responses.add(
+            responses.GET, f"{quran_client.settings.QURAN_API_BASE_URL}/verses/by_chapter/1",
+            json=VERSES_PAYLOAD, status=200,
+        )
+        tafsir_url = f"{quran_client.settings.QURAN_API_BASE_URL}/tafsirs/16/by_chapter/1"
+        responses.add(
+            responses.GET, tafsir_url, status=200,
+            json={"tafsirs": [{"resource_id": 16, "verse_key": "1:1",
+                               "text": '<span class="green">(اللهِ)</span> علم على الرب'}]},
+        )
+        verses = quran_client.fetch_verses(1, ["fr", "ar"])
+        assert [(t["code"], t["resource_id"]) for t in verses[0]["translations"]] == [("ar", 16), ("fr", 31)]
+        assert verses[0]["translations"][0]["text"] == "(اللهِ) علم على الرب"  # HTML retiré
+        # l'ID de tafsir n'est jamais envoyé comme « translations »
+        assert "translations=31" in responses.calls[0].request.url
+
+    @responses.activate
+    def test_grouped_verses_reuse_previous_entry(self):
+        """4:66 couvre 4:66-68 dans Muyassar : 4:67 et 4:68 reprennent le commentaire du groupe."""
+        base = quran_client.settings.QURAN_API_BASE_URL
+        responses.add(responses.GET, f"{base}/verses/by_chapter/4", status=200, json={"verses": [
+            {"verse_number": n, "text_uthmani": f"v{n}", "translations": []} for n in (66, 67, 68, 69)
+        ]})
+        responses.add(responses.GET, f"{base}/tafsirs/16/by_chapter/4", status=200, json={"tafsirs": [
+            {"verse_key": "4:66", "text": "groupe 66-68"}, {"verse_key": "4:69", "text": "verset 69"},
+        ]})
+        verses = quran_client.fetch_verses(4, ["ar"])
+        assert [v["translations"][0]["text"] for v in verses] == [
+            "groupe 66-68", "groupe 66-68", "groupe 66-68", "verset 69",
+        ]
+
+    @responses.activate
+    def test_fetch_tafsir_ignores_malformed_entries(self):
+        responses.add(
+            responses.GET, f"{quran_client.settings.QURAN_API_BASE_URL}/tafsirs/16/by_chapter/2",
+            status=200,
+            json={"tafsirs": [{"verse_key": "bad", "text": "x"}, {"verse_key": "2:1", "text": ""},
+                              {"verse_key": "2:2", "text": "<b>نص</b>"}]},
+        )
+        assert quran_client.fetch_tafsir(2, 16) == {2: "نص"}
+
+
 class TestSurahEndpoints:
     SURAH_URL = "/api/v1/quran/surahs/"
 

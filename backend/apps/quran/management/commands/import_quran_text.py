@@ -5,7 +5,7 @@ Source : Quran.com API v4 (via `quran_client`), appelée UNE fois par sourate.
 L'import est idempotent : le relancer met à jour sans dupliquer.
 
 Usage :
-    python manage.py import_quran_text                      # fr + en, 114 sourates
+    python manage.py import_quran_text                      # fr + en + ar, 114 sourates
     python manage.py import_quran_text --translations fr    # une seule langue
     python manage.py import_quran_text --surah 1 --surah 2  # quelques sourates
     python manage.py import_quran_text --reset              # vide puis réimporte
@@ -19,16 +19,16 @@ from apps.quran.models import Surah, Verse, VerseTranslation
 from apps.quran.services import local_text, quran_client
 
 # Langues importables : celles dont l'ID de ressource est connu.
-IMPORTABLE = ("fr", "en")
+IMPORTABLE = ("fr", "en", "ar")
 
 
 class Command(BaseCommand):
-    help = "Importe le texte du Coran et ses traductions (fr, en) dans la base."
+    help = "Importe le texte du Coran et ses traductions (fr, en, ar) dans la base."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--translations", default="fr,en",
-            help="Langues à importer, séparées par des virgules (défaut : fr,en).",
+            "--translations", default="fr,en,ar",
+            help="Langues à importer, séparées par des virgules (défaut : fr,en,ar).",
         )
         parser.add_argument(
             "--surah", type=int, action="append", dest="surahs",
@@ -72,6 +72,15 @@ class Command(BaseCommand):
                 raise CommandError(
                     f"Sourate {number} : {len(verses)} versets reçus, {chapter['verses_count']} attendus. "
                     "Import interrompu (rien n'est écrit pour cette sourate)."
+                )
+            missing = [
+                f"{v['ayah_number']}/{c}" for v in verses for c in codes
+                if c not in {t["code"] for t in v["translations"]}
+            ]
+            if missing:
+                raise CommandError(
+                    f"Sourate {number} : traduction absente pour {len(missing)} verset(s) "
+                    f"(ex. {missing[0]}). Import interrompu (rien n'est écrit pour cette sourate)."
                 )
             self._store(chapter, verses, codes)
             self.stdout.write(f"  sourate {number:>3} : {len(verses)} versets")

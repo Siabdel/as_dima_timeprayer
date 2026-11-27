@@ -27,11 +27,17 @@ VERSE_AUDIO_BASE_URL = "https://verses.quran.com/"
 
 # Traductions supportées : code langue -> resource_id Quran.com v4
 # (IDs vérifiés via /api/v4/resources/translations : 31 = Hamidullah français,
-# 20 = Saheeh International anglais, 2 = Simplified Arabic).
+# 20 = Saheeh International anglais).
 TRANSLATION_IDS = {
     "fr": 31,   # Muhammad Hamidullah
     "en": 20,   # Saheeh International
-    "ar": 2,    # Simplified Arabic
+}
+
+# Quran.com n'a AUCUNE traduction arabe (vérifié sur /resources/translations,
+# 126 ressources). L'arabe « simplifié » est un tafsir (commentaire), servi par
+# un autre endpoint : /tafsirs/{id}/by_chapter/{n}. Code langue -> id du tafsir.
+TAFSIR_IDS = {
+    "ar": 16,   # التفسير الميسر (Tafsir al-Muyassar)
 }
 
 
@@ -166,13 +172,49 @@ def fetch_verses(surah: int, translations: list[str]) -> list[dict]:
     code_by_resource = {
         resource_id: code for code, resource_id in TRANSLATION_IDS.items()
     }
-    translation_ids = ",".join(str(TRANSLATION_IDS.get(t, t)) for t in translations)
+    tafsir_codes = [t for t in translations if t in TAFSIR_IDS]
+    translation_ids = ",".join(
+        str(TRANSLATION_IDS.get(t, t)) for t in translations if t not in TAFSIR_IDS
+    )
     params = {
         "fields": "text_uthmani",
         "translations": translation_ids,
         "per_page": 300,  # une sourate n'a jamais plus de 286 versets
     }
-    return normalize_verses(_get(f"/verses/by_chapter/{surah}", params), code_by_resource)
+    verses = normalize_verses(_get(f"/verses/by_chapter/{surah}", params), code_by_resource)
+
+    # Langues servies par un tafsir (ex. « ar ») : fusionnées dans `translations`.
+    for code in tafsir_codes:
+        texts = fetch_tafsir(surah, TAFSIR_IDS[code])
+        # Un tafsir regroupe parfois plusieurs versets sous une seule entrée
+        # (ex. 4:66 couvre 4:66-68) : un verset sans entrée reprend celle du
+        # groupe, c'est-à-dire le commentaire du verset précédent.
+        text = None
+        for verse in verses:
+            text = texts.get(verse["ayah_number"]) or text
+            if text:
+                verse["translations"].append(
+                    {"code": code, "text": text, "resource_id": TAFSIR_IDS[code]}
+                )
+    # Même ordre que la base locale : par resource_id croissant.
+    for verse in verses:
+        verse["translations"].sort(key=lambda t: t["resource_id"] or 0)
+    return verses
+
+
+def fetch_tafsir(surah: int, tafsir_id: int) -> dict[int, str]:
+    """Texte d'un tafsir par numéro de verset : {ayah_number: texte sans balises HTML}."""
+    payload = _get(f"/tafsirs/{tafsir_id}/by_chapter/{surah}", {"per_page": 300})
+    texts: dict[int, str] = {}
+    for item in payload.get("tafsirs", []):
+        try:
+            ayah = int(str(item.get("verse_key", "")).split(":")[1])
+        except (IndexError, ValueError):
+            continue
+        text = re.sub(r"<[^>]+>", "", item.get("text") or "").strip()
+        if text:
+            texts[ayah] = text
+    return texts
 
 
 def fetch_reciters() -> dict:

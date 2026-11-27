@@ -54,13 +54,14 @@ Code : `services/quran_client.py`.
 
 - `ReadingProgress` : utilisateur, dernière sourate, dernier verset.
 - Texte local (branche `dev_texte_QURAN_local`) : `Surah`, `Verse` (arabe Uthmani) et
-  `VerseTranslation` (codes `fr` et `en`, avec l'ID de ressource Quran.com). Remplis par
+  `VerseTranslation` (codes `fr`, `en` et `ar`, avec l'ID de ressource Quran.com ; `ar` est le
+  tafsir al-Muyassar, car Quran.com n'a pas de traduction arabe). Remplis par
   `python manage.py import_quran_text` (idempotent, ≈ 3 Mo).
 
 Les vues lisent d'abord la base (`services/local_text.py`) et gardent exactement le format
 de réponse de Quran.com. Elles retombent sur Quran.com (avec le cache 24 h) si la base est
 vide, si la sourate est incomplète, si une traduction demandée manque ou si la langue n'est
-pas importée (ex. `ar`). `QURAN_LOCAL_TEXT_ENABLED=false` force ce repli. L'audio, les
+pas importée (autre que fr, en, ar). `QURAN_LOCAL_TEXT_ENABLED=false` force ce repli. L'audio, les
 horodatages et le mot à mot restent externes.
 
 ## 3. Les MP3 : trois sources selon le récitateur

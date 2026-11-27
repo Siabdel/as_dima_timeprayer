@@ -25,14 +25,14 @@ CHAPTERS = {"chapters": [
 
 
 def verses_payload(surah: int, count: int) -> dict:
-    """Payload by_chapter avec fr (31) et en (20) pour `count` versets."""
+    """Payload by_chapter avec en (20) et fr (31) pour `count` versets (l'arabe vient des tafsirs)."""
     return {"verses": [
         {
             "verse_number": i,
             "text_uthmani": f"آية {surah}:{i}",
             "translations": [
-                {"resource_id": 31, "text": f"FR {surah}:{i}<sup foot_note=1>1</sup>"},
                 {"resource_id": 20, "text": f"EN {surah}:{i}"},
+                {"resource_id": 31, "text": f"FR {surah}:{i}<sup foot_note=1>1</sup>"},
             ],
         }
         for i in range(1, count + 1)
@@ -46,13 +46,20 @@ def clean_cache():
     cache.clear()
 
 
+def tafsir_payload(surah: int, count: int) -> dict:
+    """Payload /tafsirs/16/by_chapter avec balises HTML, comme Quran.com."""
+    return {"tafsirs": [
+        {"resource_id": 16, "verse_key": f"{surah}:{i}", "text": f'<span class="green">AR</span> {surah}:{i}'}
+        for i in range(1, count + 1)
+    ]}
+
+
 def mock_import(surahs=(1, 2)):
     responses.add(responses.GET, f"{API}/chapters", json=CHAPTERS)
     for n in surahs:
-        responses.add(
-            responses.GET, f"{API}/verses/by_chapter/{n}",
-            json=verses_payload(n, 2 if n == 1 else 1),
-        )
+        count = 2 if n == 1 else 1
+        responses.add(responses.GET, f"{API}/verses/by_chapter/{n}", json=verses_payload(n, count))
+        responses.add(responses.GET, f"{API}/tafsirs/16/by_chapter/{n}", json=tafsir_payload(n, count))
 
 
 def run_import(*args):
@@ -71,6 +78,7 @@ def loaded_surah_1():
         v = Verse.objects.create(surah_id=1, ayah_number=i, text_uthmani=f"آية 1:{i}")
         VerseTranslation.objects.create(verse=v, code="fr", resource_id=31, text=f"FR 1:{i}")
         VerseTranslation.objects.create(verse=v, code="en", resource_id=20, text=f"EN 1:{i}")
+        VerseTranslation.objects.create(verse=v, code="ar", resource_id=16, text=f"AR 1:{i}")
 
 
 class TestImportCommand:
@@ -80,7 +88,9 @@ class TestImportCommand:
         run_import("--surah", "1", "--surah", "2")
         assert Surah.objects.count() == 2
         assert Verse.objects.count() == 3
-        assert VerseTranslation.objects.count() == 6
+        assert VerseTranslation.objects.count() == 9   # 3 versets x (ar, en, fr)
+        ar = VerseTranslation.objects.get(verse__surah_id=1, verse__ayah_number=1, code="ar")
+        assert (ar.text, ar.resource_id) == ("AR 1:1", 16)   # balises HTML du tafsir retirées
         fr = VerseTranslation.objects.get(verse__surah_id=1, verse__ayah_number=1, code="fr")
         assert fr.text == "FR 1:1"            # note de bas de page retirée
         assert fr.resource_id == 31
@@ -91,7 +101,7 @@ class TestImportCommand:
         run_import("--surah", "1")
         run_import("--surah", "1")
         assert Verse.objects.count() == 2
-        assert VerseTranslation.objects.count() == 4
+        assert VerseTranslation.objects.count() == 6
 
     @responses.activate
     def test_single_language(self):
@@ -110,7 +120,18 @@ class TestImportCommand:
     def test_incomplete_surah_aborts_without_writing(self):
         responses.add(responses.GET, f"{API}/chapters", json=CHAPTERS)
         responses.add(responses.GET, f"{API}/verses/by_chapter/1", json=verses_payload(1, 1))  # 1 au lieu de 2
+        responses.add(responses.GET, f"{API}/tafsirs/16/by_chapter/1", json=tafsir_payload(1, 1))
         with pytest.raises(CommandError, match="2 attendus"):
+            run_import("--surah", "1")
+        assert Verse.objects.count() == 0
+
+    @responses.activate
+    def test_missing_translation_aborts_without_writing(self):
+        """Si l'API ne renvoie pas une traduction demandée, rien n'est écrit pour la sourate."""
+        responses.add(responses.GET, f"{API}/chapters", json=CHAPTERS)
+        responses.add(responses.GET, f"{API}/verses/by_chapter/1", json=verses_payload(1, 2))
+        responses.add(responses.GET, f"{API}/tafsirs/16/by_chapter/1", json={"tafsirs": []})  # plus d'arabe
+        with pytest.raises(CommandError, match="traduction absente"):
             run_import("--surah", "1")
         assert Verse.objects.count() == 0
 
@@ -151,6 +172,10 @@ class TestLocalServing:
         assert [(t["code"], t["text"], t["resource_id"]) for t in first["translations"]] == [
             ("en", "EN 1:1", 20), ("fr", "FR 1:1", 31),
         ]
+        ar = api_client.get("/api/v1/quran/surahs/1/", {"translations": "ar"})
+        assert [(t["code"], t["text"], t["resource_id"]) for t in ar.data[0]["translations"]] == [
+            ("ar", "AR 1:1", 16),
+        ]
         assert len(responses.calls) == 0
 
     @responses.activate
@@ -166,10 +191,11 @@ class TestLocalServing:
 
     @responses.activate
     def test_translation_order_matches_quran_com(self, api_client, loaded_surah_1):
-        """Ordre par resource_id (en=20 avant fr=31), comme l'API, quel que soit l'ordre demandé."""
-        for asked in ("fr,en", "en,fr"):
+        """Ordre par resource_id (ar=16, en=20, fr=31), comme l'API, quel que soit l'ordre demandé."""
+        for asked in ("fr,en,ar", "ar,fr,en", "en,fr"):
             resp = api_client.get("/api/v1/quran/surahs/1/", {"translations": asked})
-            assert [t["code"] for t in resp.data[0]["translations"]] == ["en", "fr"]
+            codes = [t["code"] for t in resp.data[0]["translations"]]
+            assert codes == [c for c in ("ar", "en", "fr") if c in asked]
 
 
 class TestFallbackToQuranCom:
@@ -191,7 +217,7 @@ class TestFallbackToQuranCom:
     @responses.activate
     def test_unknown_language_falls_back_to_api(self, api_client, loaded_surah_1):
         responses.add(responses.GET, f"{API}/verses/by_chapter/1", json=verses_payload(1, 2))
-        resp = api_client.get("/api/v1/quran/surahs/1/", {"translations": "ar"})
+        resp = api_client.get("/api/v1/quran/surahs/1/", {"translations": "de"})
         assert resp.status_code == 200
         assert len(responses.calls) == 1
 
