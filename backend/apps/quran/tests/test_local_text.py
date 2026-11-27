@@ -218,3 +218,27 @@ class TestFallbackToQuranCom:
         resp = api_client.get("/api/v1/quran/surahs/1/", {"translations": "fr"})
         assert resp.status_code == 200
         assert len(responses.calls) == 1
+
+
+class TestAdmin:
+    """Les tables sont visibles dans /admin/ mais en lecture seule."""
+
+    @pytest.fixture
+    def admin_client(self, client, django_user_model):
+        django_user_model.objects.create_superuser(email="admin@example.com", password="pass-12345")
+        client.login(username="admin@example.com", password="pass-12345")
+        return client
+
+    def test_tables_listed_and_changelists_load(self, admin_client, loaded_surah_1):
+        index = admin_client.get("/admin/")
+        for label in ("Sourates", "Versets", "Traductions de versets"):
+            assert label in index.content.decode()
+        for model in ("surah", "verse", "versetranslation"):
+            assert admin_client.get(f"/admin/quran/{model}/").status_code == 200
+
+    def test_read_only(self, admin_client, loaded_surah_1):
+        assert admin_client.get("/admin/quran/verse/add/").status_code == 403
+        verse_id = Verse.objects.first().id
+        resp = admin_client.post(f"/admin/quran/verse/{verse_id}/delete/", {"post": "yes"})
+        assert resp.status_code == 403
+        assert Verse.objects.count() == 2

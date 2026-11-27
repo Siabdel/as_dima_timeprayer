@@ -39,6 +39,19 @@ Remarques de suivi, mises à jour le 2026-11-25 (dernière mise en ligne : bibli
 - Procédure : clé temporaire `claude-deploy-salawat` ajoutée puis retirée à chaque déploiement (DEPLOY.md §10).
 - La clé `claude-deploy-dimatlas-vps` est **toujours autorisée** sur la VPS (root) : elle ne vient pas de cette session ; à retirer si elle ne sert plus.
 
+## Texte du Coran en base locale (branche `dev_texte_QURAN_local`, 2026-11-27)
+- **Principe :** sourates, versets (arabe Uthmani) et traductions `fr` (Hamidullah, id 31) et `en` (Saheeh, id 20) sont copiés en base (`Surah`, `Verse`, `VerseTranslation`, migration `0002_quran_text`). Les vues lisent la base d'abord (`services/local_text.py`) et gardent le format de réponse de Quran.com : le frontend ne change pas.
+- **Repli automatique sur Quran.com** (cache 24 h) si la base est vide, si une sourate est incomplète, si une traduction demandée manque pour un verset, ou si la langue n'est pas importée (ex. `ar`, ID numérique). `QURAN_LOCAL_TEXT_ENABLED=false` force ce repli.
+- **Import :** `python manage.py import_quran_text` (≈ 1 min, une requête Quran.com par sourate, idempotent). Options : `--translations fr`, `--surah N` (répétable), `--reset`. Une sourate dont le nombre de versets reçu ne correspond pas est refusée sans rien écrire. **Pas automatique** : à lancer une fois après `migrate` (DEPLOY.md §3.4), sinon l'API continue d'appeler Quran.com.
+- **Mesuré en local (SQLite) :** 114 sourates, 6 236 versets, 6 236 traductions par langue ; base complète ≈ 4,4 Mo. Les 114 sourates (`fr,en`) sont identiques aux réponses de Quran.com après alignement de l'ordre. Latence : versets ≈ 5–12 ms (contre ≈ 40–55 ms via l'API) ; liste des sourates ≈ 1,3 ms une fois chaud (le premier appel, ≈ 80 ms, est un coût de démarrage, pas celui de la requête). Chiffres indicatifs, un seul passage.
+- **Ordre des traductions :** triées par `resource_id` croissant (en avant fr), comme Quran.com, quel que soit l'ordre demandé. Le frontend les affiche dans l'ordre reçu : ne pas changer sans vérifier `VerseList.vue`.
+- **Reste externe :** mot à mot, audio, horodatages de suivi (`chapter_recitations?segments=true`). `fetch_chapter_audio` n'est pas mis en cache : chaque lancement d'un récitateur Quran.com refait un appel externe (le front gère le 429).
+- **Licences à vérifier** avant de redistribuer les traductions (Hamidullah, Saheeh). Non vérifié.
+- **Admin Django :** `Surah`, `Verse`, `VerseTranslation` sont visibles dans `/admin/` en **lecture seule** (ajout, modification, suppression désactivés) pour ne jamais altérer le texte à la main. Ils n'apparaissaient pas tant que `apps/quran/admin.py` n'existait pas ; après un `git pull`, lancer aussi `migrate` puis relancer le serveur.
+- **Tests :** `apps/quran/tests/test_local_text.py` (import, lecture sans appel réseau, repli). Suite complète : 191 verts. Pas de venv dans le dépôt (voir HANDOFF.md) ; en dev sans `DB_HOST`, la base est `backend/db.sqlite3` (ignorée par git).
+- **À vérifier :** comment le serveur de dev du frontend atteint l'API (pas de `proxy` dans `vite.config.js`). `backend/manage.py` apparaît modifié (droit d'exécution 644 → 755), non committé volontairement.
+- **Documentation :** `docs/ARCHITECTURE_CORAN.md` décrit l'architecture du module Coran.
+
 ## Bibliothèque (Douâa & Hadiths)
 - La base de production était vide (page « Aucune entrée dans cette catégorie »). `seed_library` lancé le 2026-11-25 : 19 douâas + 19 hadiths. Commande idempotente ; à relancer après toute mise à jour de `apps/library/content.py` (jamais `--reset` sans nécessité). Étape désormais documentée dans DEPLOY.md (§3.4, §5, §6, check-list) : elle n'est pas automatique, un nouveau déploiement from scratch affichera une page vide tant qu'elle n'est pas lancée.
 
